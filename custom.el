@@ -1,6 +1,6 @@
 ;; -*- Emacs-Lisp -*-
 
-;; Time-stamp: <2011-08-20 16:50:46 Saturday by devil>
+;; Time-stamp: <2011-08-20 18:35:00 Saturday by devil>
 
 (defconst my-emacs-path "~/.emacs.d/" "我的emacs相关配置文件的路径")
 (defconst my-emacs-my-lisps-path  (concat my-emacs-path "my-lisps/") "我自己写的emacs lisp包的路径")
@@ -465,5 +465,6 @@ If FULL is t, copy full file name."
 ;; (require 'desktop-settings)
 
 (set-default-font "-altsys-Serafettin Cartoon-normal-italic-ultra-expanded-*-*-*-*-*-*-0-iso10646-1")
-
+(fullscreen)
+(switch-to-scratch)
 (sb-update)
