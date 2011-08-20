@@ -1,0 +1,166 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-22 15:51:46 Monday by ahei" -->
+
+<!-- ERC使用简介 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#xwl" target="_blank"><span style="color: #0000ff;"><b>xwl</b></span></a>
+
+<img class="alignright" title="ERC" src="screenshots/erc-logo.jpg"/>
+
+ERC, emacs irc client, 即是 emacs 里登录 irc 的客户端。irc 是什么? internet relay chat, 简单地说，就是用于群聊的。一帮无聊的 geeks 成天没事干，就在上面灌水，所以上面的 channel 技术类的占绝大数，比如 emacs, c++, debian, scheme 等等。<!--more-->
+
+好，开始 ERC 之旅，先让我们登录到 #emacs-cn 上去：
+
+a) M-x erc-select
+
+   host: irc.debian.org
+   port: 6667 到 7000 随便用一个
+   username: 先随便填一个，比如 foo 
+   password: 还没注册的可以直接回车
+
+b) 这时候你就进入了一个名字类似 "irc.debian.org:6669" 的 server buffer. 接着执行：
+
+     ERC> /join #emacs-cn
+
+   就进入 #emacs-cn channel 啦!
+
+c) 如何注册
+
+   切换到刚才那个 server buffer, 输入：
+
+     ERC> /msg nickserv help register
+
+   按着提示一步一步来就行，根据 irc server 的不同，有些会需要你用有效邮箱来确认一下。注册 id 的好处就是，这个 id 就不会被别人抢走了，比如有人已经用 foo 登录了，但这被你注册了，你连进去的时候，就能把名字抢过来，而对方可能会变成 foo` 之类的别名。
+
+以上其实对于所有 irc client 来讲都是通用的。接下来是我的 ERC 一些配置供参考：
+
+1. 基本设置
+
+   编码，尽量 utf-8 (#emacs-cn 也是用 utf-8):
+<pre lang="lisp">
+(setq erc-default-coding-system '(utf-8 . utf-8))
+</pre>
+   如果某个 channel 是别的编码，也可以单独设置，例如国内某个 irc server 上 #linuxfire 就是用 gbk 编码，我们单独为它设置：
+<pre lang="lisp">
+(setq erc-encoding-coding-alist '(("#linuxfire" . chinese-iso-8bit))
+</pre>
+   设置 nick, 全名: nick 就是登录时用的，full name 是别人查询你的时候显示的信息。(类似BBS 的 C-a )
+<pre lang="lisp" line="1">
+(setq erc-nick "xwl"
+      erc-user-full-name "William Xu")
+</pre>
+2. 登录后自动加入预定的 channels
+<pre lang="lisp" line="1">
+(erc-autojoin-mode 1)
+(setq erc-autojoin-channels-alist
+      '(("oftc.net"                 ; debian.org 是它的别名
+         "#debian-zh"
+         "#emacs-cn")))
+</pre>
+
+3. 连接服务器或进入聊天室后自动执行预设操作
+   ERC 提供各种各样的 hook 让你在某个操作（登入 server, 进入channel等）之后执行一些你预设的操作。比如如果你有某个 channel 的管理员权限，可以在加入聊天室时自动转换到管理员身份：
+<pre lang="lisp" line="1">
+(defun xwl-erc-auto-op ()
+  (let ((b (buffer-name)))
+    (when (string= b "#emacs-cn")
+      (erc-message "PRIVMSG" (concat "chanserv op " b)))))
+     
+(add-hook 'erc-join-hook 'xwl-erc-auto-op)
+</pre>
+
+4. 过滤信息
+   如果你对某些消息或者某个人说的话特别感兴趣，我们可以通过关键字匹配对相关信息进行高亮。例如：
+<pre lang="lisp" line="1">
+(erc-match-mode 1)
+(setq erc-keywords '("emms" "python"))
+(setq erc-pals '("rms"))
+</pre>
+  相反地，如果你对某些消息不感兴趣，比如有人进来啦，有人出去啦，如此这般一下就不会看到了：
+
+<pre lang="lisp" line="1">
+(setq erc-ignore-list nil)
+(setq erc-hide-list
+      '("JOIN" "PART" "QUIT" "MODE"))
+</pre>
+5. 新信息提醒
+
+   信息一般可分为三种：
+
+   1) 某人悄悄跟你说话(即所谓的 private message)，这会打开一个新小窗，即 buffer.
+
+      ERC>/msg NICK how are you doing
+
+   2) 某人公开地跟你说话，即别的在 channel 里的人也能看到。一般来说，习惯用 nick加 `:' 表示。(要输入某人 nick 的时候，首字母加 TAB 就能帮你补全，一次不行，多 TAB 几次可以选择)
+
+      &lt;xwl&gt; ahei: 你可以 match regexp,
+  
+   3) 别的情形。
+
+   ERC 会通过 erc-modified-channels-object 来设置 mode line，提示有新消息，类似：
+
+       [#o: 38, #emacs-cn: 5]
+
+   为什么要区分以上三种情形呢? 因为我们可以对不同信息，用不同的颜色在mode line 来提示，这样方便你决定是不是要及时地去查阅这条消息。
+
+   ERC 本身只在 mode line 提示新消息，如果你切换到别的程序去了，比如在firefox 里看 ppmm，还想被提醒的话，可以借助一些外部工具来实现。mac 下用 growl，linux 可以用 zenity，windows 不知有什么类似工具? 给个例子：
+
+<pre lang="lisp" line="1">
+(defun xwl-erc-text-matched-hook (match-type nickuserhost message)
+  "Shows a growl notification, when user's nick was mentioned.
+     If the buffer is currently not visible, makes it sticky."
+  (when (and (erc-match-current-nick-p nickuserhost message)
+             (not (string-match (regexp-opt '("Users"
+                                              "User"
+                                              "topic set by"
+                                              "Welcome to "
+                                              "nickname"
+                                              "identified"
+                                              "invalid"
+                                              ))
+                                message)))
+    (let ((s (concat "ERC: " (buffer-name (current-buffer)))))
+      (case system-type
+        ((darwin)
+         (xwl-growl s message))))))
+
+(add-hook 'erc-text-matched-hook 'xwl-erc-text-matched-hook)
+
+(defun xwl-growl (title message)
+  (start-process "growl" " growl" growlnotify-command title "-a" "Emacs")
+  (process-send-string " growl" message)
+  (process-send-string " growl" "\n")
+  (process-send-eof " growl"))
+</pre>
+    
+6. 时间戳
+<pre lang="lisp">
+(erc-timestamp-mode 1)
+</pre>
+   下面这个变量可以控制时间戳的显示方式，比如位置什么的，默认值：
+<pre lang="lisp">
+(setq erc-insert-timestamp-function 'erc-insert-timestamp-left)
+</pre>
+
+7. log
+   我们可以将 channel 里的聊天记录都保存下来，方便日后查询，或者有时候你的 emacs 突然挂掉的时候，还能找到挂之间有没有人对你说了什么。
+
+<pre lang="lisp" line="1">
+(require 'erc-log)
+(erc-log-mode 1)
+(setq erc-log-channels-directory "~/var/erc/"
+      erc-save-buffer-on-part t
+      erc-log-file-coding-system 'utf-8
+      erc-log-write-after-send t
+      erc-log-write-after-insert t)
+
+(unless (file-exists-p erc-log-channels-directory)
+  (mkdir erc-log-channels-directory t))
+</pre>    
+
+最后，ERC 上 irc 还是蛮舒服的，因为所有的、你熟悉的 emacs 编辑命令都在那里! 国内 irc 用户还是少了点，对岸台湾倒是蛮多的。大家有空就上来玩吧~ 要是想看我的配置可以在 github.com 上看我的配置文件：
+  http://github.com/xwl/xwl-emacs-config/blob/master/.emacs.d/site-lisp/config/xwl-erc.el
+
+贴个图：
+[caption width="150" caption="Emacs中的IRC"]<a href="screenshots/erc.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_erc.png" width="150" height="150" /></a>[/caption]

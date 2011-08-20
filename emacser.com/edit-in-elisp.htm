@@ -1,0 +1,158 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-10 16:09:13 Wednesday by ahei" -->
+
+<!-- 针对Emacs中文本编辑的编程简介 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#laihj" target="_blank"><span style="color: #0000ff;"><b>laihj</b></span></a>
+
+<img class="alignright" title="Emacs" src="screenshots/emacs.jpg"/>
+
+<p>Elisp是Emacs下的Lisp方言，而Emacs是一款编辑器。那么针对于Emacs，Lisp要做的很重要一部分工作当然就是对编辑的自动化支持。比如移动鼠标，输入句子，查找替换，代码高亮等等，简单地说，就是为更好更方便地支持文本编辑提供支持。而把这些函数都重合起来，就起成了Emacs mode。如我们常用的C++ mode,python mode。还有之前我一直在介绍的org-mode等，都是由Elisp拼成的。<!--more--></p>
+
+<p>学习Elisp，可以满足对Emacs进行定制的需求，你可以把想要的功能写在.el文件里面，让Emacs来调用。一方面可以实现一些简单的轻量级的功能，而不需要为此寻找和安装一个完整的mode。另一方面，可以修改现有的mode，使得更符合自己的习惯。这符合开源的作法，不爽即改。</p>
+
+<h3>Elisp函数的简单例子</h3>
+<h4>光标位置</h4>
+<pre lang="lisp" line="1">
+;; 返回当前光标的位置
+(point)
+;; region的头跟尾
+(region-beginning)
+(region-end)
+;; 最大光标位置（即文件尾），elisp还提供最小光标位置(point-min)，不过我觉得那应该都是1吧。
+(point-max)
+;; 返回buffer结尾的绝对位置，无视narrow-to-region
+(buffer-end 1)</pre>
+<h4>移动光标和搜索</h4>
+<pre lang="lisp" line="1">
+;移动光标到392
+(goto-char 392)
+
+; 向前/向后移动n字符
+(forward-char n)
+(backward-char n)
+
+; 跳过所有\n\t,即把光标移动第一个不是换行或制表符那里
+; 返回移动的字符数
+(skip-chars-forward "\n\t")
+(skip-chars-backward "\n\t")
+
+; 移动光标到myStr后面，向前和向后
+; 返回新的光标位置
+(search-forward myStr)
+(search-backward myStr)
+
+; 同上，但是参数是正则表达式，myRegex
+; 返回新的光标位置
+(re-search-forward myRegex)
+(re-search-backward myRegex)
+</pre>
+<h4>文本编辑</h4>
+<pre lang="lisp" line="1">
+; 删除光标后的九个字符
+(delete-char 9)
+
+; 删除选中的两点之前的文本
+(delete-region mystartpos myendpos)
+
+; 在当前光标位置插入一字符串
+(insert "Forza Inter")
+
+; 从buffer中获得一个字符串并赋给mystr
+(setq Mystr (buffer-substring mystartpos myendpos))
+
+; 改变字符大小写
+;这个例子是指当前光标之前的20个字符
+(rapitalize-region (- (point) 20) (point))
+</pre>
+
+<h3>字符串</h3>
+<pre lang="lisp" line="1">
+; 长度
+(length "abc") ; returns 3
+
+; 获取一个子串
+(substring myStr startIndex endIndex)
+
+; 替换，以正则方式
+(replace-regexp-in-string myRegex myReplacement myStr)
+</pre>
+
+<h3>Buffers</h3>
+<pre lang="lisp" line="1">
+; 当前buffer的名字
+(buffer-name)
+
+; 文件名（全路径)
+(buffer-file-name)
+
+; 设定一个buffer名
+(set-buffer myBufferName)
+
+; 保存
+(save-buffer)
+
+; 关闭指定的buffer
+(kill-buffer myBuffName)
+
+; 关闭当前buffer
+(kill-this-buffer)
+
+; 临时指定一个buffer作为当前buffer
+(with-current-buffer myBuffer
+  ;; do something here ...
+)
+</pre>
+
+<h3>Files</h3>
+<pre lang="lisp" line="1">
+; 打开一个文件
+(find-file myPath)
+
+; 另存
+; 会关闭当前的buffer，打开另存好的文件
+(write-file myPath)
+
+; 把一个文件内容插入到当前位置 
+(insert-file-contents myPath)
+
+; 将选中的评论文本加到某个文件后面
+(append-to-file myStartPos myEndPos myPath)
+
+; 重命名
+(rename-file fileName newName)
+
+; 复制
+(copy-file oldName newName)
+
+; 删除
+(delete-file fileName)
+
+; 获取路径
+(file-name-directory myFullPath)
+
+; 获取文件名(不含路径)
+(file-name-nondirectory myFullPath)
+
+; 得到文件名后缀
+(file-name-extension myFileName)
+
+; 获得不含后缀的文件名。
+(file-name-sans-extension "abc.htm")
+</pre>
+
+<h3>简单的例子</h3>
+<pre lang="lisp" line="1">
+(defun insert-p-tag ()
+  "Insert <p></p> at cursor point."
+  (interactive)
+  (insert "<p></p>")
+  (backward-char 4))
+</pre>
+<p>在当前光标处插入一个p tag。做法是插放一个串，然后将光标移回4位。</p>
+
+<h3>编写一个mode</h3>
+<p>理论上来讲，知道上面这些东西，你就有能力编写一个mode了。但是，编写mode毕竟是一个复杂的工作，需要编写者对elisp编程具有"hello world"以上很多级的熟练度。</p>
+<p>在李杀网，作者有一个系列文章来讨论如何为一个编程语言编写mode。</p>
+<p>The End. Have fun!</p>

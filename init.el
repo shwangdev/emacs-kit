@@ -58,7 +58,7 @@
 (require 'starter-kit-registers)
 (require 'starter-kit-eshell)
 (require 'starter-kit-lisp)
-(require 'starter-kit-perl)
+;;(require 'starter-kit-perl)
 (require 'starter-kit-ruby)
 (require 'starter-kit-js)
 

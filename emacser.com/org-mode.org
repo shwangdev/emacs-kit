@@ -1,0 +1,573 @@
+#+TITLE: Emacs org mode 学习笔记
+#+OPTIONS: ^nil author:nil timestamp:nil creator:nil
+
+#+BEGIN_HTML
+<img class="alignright" title="Org Mode" src="screenshots/org-mode-logo.png"/>
+#+END_HTML
+
+** 参考文献
+   本文参考并引用了以下的文章的部分内容。
+   + [[http://emacser.com/org-mode-yupeng.htm][Yu Peng的Emacs的Org Mode]]
+   + Emacs org Mode的官方参考文档
+
+** 用Org Mode做笔记
+*** 想法与配置
+
+    以前一直都用Emacs Wiki Mode记笔记，但wiki mode总有些奇奇怪怪的bug，并且已经不更新了，最近org mode 非常火爆，禁不住想试一下。
+
+    #+HTML: <!--more-->
+
+    对于记笔记，我的打算很简单，一个目录用来装所有的笔记，一个目录用来存放publish成HTML格式的笔记。并且能够自动生成索引文件。这样就可以在索引文件里直接查找并跳转到所有的笔记里。
+
+    Emacs ORG mode的基本配置如下：
+    #+BEGIN_HTML
+    <pre lang="lisp" line="1">
+(setq load-path (cons "~/lib/emacs-lisp/org-7.01h/lisp" load-path))
+(setq load-path (cons "~/lib/emacs-lisp/org-7.01h/contrib/lisp" load-path))
+
+(require 'org-install)
+(require 'org-publish)
+(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
+(add-hook 'org-mode-hook 'turn-on-font-lock)
+(add-hook 'org-mode-hook 
+(lambda () (setq truncate-lines nil)))
+
+(global-set-key "\C-cl" 'org-store-link)
+(global-set-key "\C-ca" 'org-agenda)
+(global-set-key "\C-cb" 'org-iswitchb)
+    </pre>
+    #+END_HTML
+
+    上面基本上是从ORG-mode的文档里抄来的,其中包含setq truncate-lines nil的两行代码是为了解决org-mode在编辑中文的时候不会自动折行的问题。
+
+    接下来的配置基本照抄了[[http://blog.csdn.net/meteor1113/archive/2009/07/30/4395673.aspx][meteor1113@newsmth的用org代替muse记日记]] ， 修改的部分就是我不想让它自动生成index文件，我比较喜欢自己组织。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-publish-project-alist
+      '(("note-org"
+         :base-directory "C:/Documents and Settings/caole/My Documents/My Dropbox/emacs/org/org"
+         :publishing-directory "C:/Documents and Settings/caole/My Documents/My Dropbox/emacs/org/publish"
+         :base-extension "org"
+         :recursive t
+         :publishing-function org-publish-org-to-html
+         :auto-index nil
+         :index-filename "index.org"
+         :index-title "index"
+         :link-home "index.html"
+         :section-numbers nil
+         :style "<link rel=\"stylesheet\"
+    href=\"./style/emacs.css\"
+    type=\"text/css\"/>")
+        ("note-static"
+         :base-directory "C:/Documents and Settings/caole/My Documents/My Dropbox/emacs/org/org"
+         :publishing-directory "C:/Documents and Settings/caole/My Documents/My Dropbox/emacs/org/publish"
+         :recursive t
+         :base-extension "css\\|js\\|png\\|jpg\\|gif\\|pdf\\|mp3\\|swf\\|zip\\|gz\\|txt\\|el"
+         :publishing-function org-publish-attachment)
+        ("note" 
+         :components ("note-org" "note-static")
+         :author "caole82@gmail.com"
+         )))
+</pre>
+#+END_HTML
+
+    值得注意的一个地方是，我把org和publish的目录都扔在了我的Dropbox中，这样可以方便的在不同的系统中同步笔记。有些人喜欢用SVN/GIT/CVS等版本管理工具，也是个不错的办法。但我没有地方搭这些东西的服务器:-( 
+    这样写完了笔记就可以用M-x org-publish 发布了，我把它绑定到了F8-p上。
+#+BEGIN_HTML
+<pre lang="lisp">
+(global-set-key (kbd "<f8> p") 'org-publish)
+</pre>
+#+END_HTML
+
+    为了在org mode中使用auto-complete，我在auto-complete中增加了这样的配置：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq ac-modes
+      (append ac-modes '(org-mode objc-mode jde-mode sql-mode
+                                  change-log-mode text-mode
+                                  makefile-gmake-mode makefile-bsdmake-mo
+                                  autoconf-mode makefile-automake-mode)))
+</pre>
+#+END_HTML
+	
+*** 常用的编辑
+**** 结构化编辑
+***** 标题
+	  一级标题是一个*，两级标题是两个*，三级标题...... 最多可以建10级标题。注意，这里的*必须在行首。Publish之后会自动生成目录链接。在Emacs中S-Tab可以收起所有的目录树，在标题上按Tab可以展开/收起该标题下的所有内容。在标题上按Alt+左右方向键可以减少/增加该标题的级别。
+***** 枚举和列表
+      在org mode中还支持枚举(unordered list)，有序的列表(ordered list)和带描述的列表。
+
+      枚举可以用'-','+',或者非行首的'*' 作为bullets.同时，可以用开头的空格来区分枚举的层次结构。
+      - 枚举1
+      + 枚举2
+      * 枚举3
+      * 枚举4
+
+    有序的列表可以由'1.'或'1)'来组织。这里可以方便的使用Alt+左右方向键调整列表项的级别。M-Ret可以在当前位置插入一个列表项；C-Ret可以在文档尾部插入一个列表项或者标题。
+    1) 第一级
+    2) 第二级
+       1) 第二级第一点
+    3) 第三级 
+
+      带描述的列表效果是这样的：
+      - Elijah Wood :: He plays Frodo
+      - Sean Austin :: He plays Sam, Frodo’s friend. I still remember
+                       在文档中是这样的：
+#+BEGIN_SRC TEXT
+      - Elijah Wood :: He plays Frodo
+      - Sean Austin :: He plays Sam, Frodo’s friend. I still remember
+#+END_SRC
+
+      5个或以上的“-”是一个水平分割符。
+      -----
+      
+***** 脚注
+      org mode可以为文章添加脚注，脚注有如下两种方式：
+#+BEGIN_SRC TEXT
+      blabla[1]
+      blablabla[fn:bla]
+#+END_SRC
+
+      效果是这样的：
+      blabla[1]
+      blablabla[fn:bla]
+
+      接下来必须顶格写这些脚注的内容了，这样在文档的末尾会自动生成脚注。C-c C-c可以在脚注的标记与内容之间切换。C-c C-x f可以在当前位置添加一个脚注。
+
+      : [1] 12345
+      : [fn:bla] 67890
+
+[1] 12345
+[fn:bla] 67890
+
+***** 结构化编辑的常用快捷方式
+      这里是Structure Editing的默认快捷方式：
+
+      | next/previous heading                      | C-c C-n/p          |
+      | next/previous heading, same level          | C-c C-f/b          |
+      | backward to higher level heading           | C-c C-u            |
+      | jump to another place in document          | C-c C-j            |
+      | previous/next plain list item              | S-UP/DOWN          |
+      |--------------------------------------------+--------------------|
+      | insert new heading/item at current level   | M-RET              |
+      | insert new heading after subtree           | C-RET              |
+      | insert new TODO entry/checkbox item        | M-S-RET            |
+      | insert TODO entry/ckbx after subtree       | C-S-RET            |
+      | turn (head)line into item, cycle item type | C-c -              |
+      | turn item/line into headline               | C-c *              |
+      | promote/demote heading                     | M-LEFT/RIGHT       |
+      | promote/demote current subtree             | M-S-LEFT/RIGHT     |
+      | move subtree/list item up/down             | M-S-UP/DOWN        |
+      | sort subtree/region/plain-list             | C-c ^              |
+      | clone a subtree                            | C-c C-x c          |
+      | refile subtree                             | C-c C-w            |
+      | kill/copy subtree                          | C-c C-x C-w/M-w    |
+      | yank subtree                               | C-c C-x C-y or C-y |
+      | narrow buffer to subtree / widen           | C-x n s/w          |
+
+**** 富文本编辑
+***** 表格
+
+      最基本的表格是这样的：
+#+BEGIN_EXAMPLE
+      | A | B |
+      | C | D |
+#+END_EXAMPLE
+      效果是这样的：
+      | A | B |
+      | C | D |
+      还可以：
+#+BEGIN_EXAMPLE
+      #+CAPTION: 表格的标题
+      #+LABEL: tbl:table_label1
+      | A | B |
+      |---+---|
+      | C | D |
+#+END_EXAMPLE
+      在这里，CAPTION指定的是表格的标题，LABEL后的tbl用来指定在文档内部引用该表格的标签。
+      效果是：
+#+CAPTION: ABCD
+#+LABEL: tbl:abcd
+      | A | B |
+      |---+---|
+      | C | D |
+      C-c RET可以在光标所在表格内插入一行
+
+      这里是表格相关的常用快捷键：
+
+      | convert region to table                      | C-c |        |
+      | re-align the table without moving the cursor | C-c C-c      |
+      | re-align the table, move to next field       | TAB          |
+      | move to previous field                       | S-TAB        |
+      | re-align the table, move to next row         | RET          |
+      | move to beginning/end of field               | M-a/e        |
+      | move the current column left                 | M-LEFT/RIGHT |
+      | kill the current column                      | M-S-LEFT     |
+      | insert new column to left of cursor position | M-S-RIGHT    |
+      | move the current row up/down                 | M-UP/DOWN    |
+      | kill the current row or horizontal line      | M-S-UP       |
+      | insert new row above the current row         | M-S-DOWN     |
+      | insert hline below (C-u : above) current row | C-c -        |
+      | insert hline and move to line below it       | C-c RET      |
+      | sort lines in region                         | C-c ^        |
+
+***** 引用文字或代码
+#+BEGIN_EXAMPLE
+      我常用到的引用文字的标签是#+BEGIN_EXAMPLE / #+END_EXAMPLE ，在这之间的文字会保留原有的格式。
+
+      对于代码而言，可以用#+BEGIN_SRC SRC_TYPE / #+END_SRC，其中SRC_TYPE用来指定代码的类型，
+      如lisp, java, c, c++等。结合HTMLIZE可以让导出的HTML页面里的代码被按照语法着色。
+
+      为了保留引文的格式，还可以使用#+BEGIN_VERSE / #+END_VERSE 和#+BEGIN_QUOTE/ #+END_QUOTE. 
+
+      将引文居中排版可以使用#+BEGIN_CENTER / #+END_CENTER. 
+#+END_EXAMPLE
+
+
+***** 引用图片
+      用如下方法可以直接在文档内显示图片:
+#+BEGIN_EXAMPLE
+#+CAPTION: title for the image
+#+LABEL: fig:tag_for_img
+      [[path/to/image.jpg]]
+#+END_EXAMPLE
+
+      CAPTION用来指定图片的标题，LABEL用来在文档内部引用这张图片。和表格一样，这两部分都不是必须的。
+
+***** 插入链接或附件
+
+      给文档添加附件非常简单，C-c C-a 然后就着菜单选好了，其中C-c C-a a是添加文件系统中的文件作为附件。
+
+      Org mode提供多种链接方式，包括链接到一个文件内部，链接到外部文件，电子邮件等等。
+
+****** 链接的格式：
+
+       链接主要是两种格式：
+#+BEGIN_EXAMPLE
+       [[link][description]] 或者 [[link]]
+#+END_EXAMPLE
+
+       例如 [[www.sina.com.cn][SINA]]
+
+****** 如何访问链接：
+       在一个链接上按C-c C-o即可访问，至于调用什么程序访问，取决于链接的内容，emacs和org mode的配置了。
+
+****** 链接的类型
+
+       如下都是可以支持的常用link类型：
+#+BEGIN_EXAMPLE
+       http://www.sina.com         Web
+       file:paper/lastdoc.pdf      本地文档，用相对路径表示
+       file:/path/to/filename      本地文档，用绝对路径表示
+       news:comp.emacs             新闻组
+       mailto:caole82@gmail.com    邮件地址
+#+END_EXAMPLE
+
+****** 内部链接 Internal Link
+
+       内部链接就类似于HTML的锚点（实际上export成HTML文件后就变成了锚点），可以实现在一个文档内部的跳转。
+
+       如下命令定义了一个名为target的跳转目标：
+#+BEGIN_EXAMPLE
+#<<target>>
+#+END_EXAMPLE
+
+       如下方式可以设置到target的链接：
+#+BEGIN_EXAMPLE
+       [[target]] 或 [[target][description]]
+#+END_EXAMPLE
+
+****** 其他常用链接命令
+
+       C-c l 可以在光标所在处创建一个跳转目标点，在需要跳转至该目标的位置输入命令C-c C-l可以建立到目标的链接
+
+       当输入C-c C-l命令，光标若处在已经存在的一个链接上的时候，可以编辑改链接。
+
+       命令C-c %可以记录当前光标所在位置，当光标移到其他地方后，可以用C-c &跳转回来。这里的位置记录类似一个kill-ring，重复输入C-c %可以记录多个位置，重复输入C-c &可以连续跳转到之前记录的对应位置上。
+
+** 用Org Mode管理个人事务
+*** 关于TODO ITEM的基本知识和操作
+**** 设置TODO项目
+     所有标题只要以TODO开头，就会变成TODO 项目。例如：
+
+     : *** TODO 付手机费
+     : *** TODO 开会
+
+**** 更改TODO项目的状态
+#+BEGIN_EXAMPLE
+     C-c C-t Rotate the TODO state of the current item among
+     ,-> (unmarked) -> TODO -> DONE --.
+     '--------------------------------'
+#+END_EXAMPLE
+
+     C-c C-t是在定义的状态中循环，而C-u C-c C-t可以指定一个状态。
+
+     S-Right 和 S-Left也可以在定义的状态中循环。
+
+     C-c a t可以显示所有的TODO项目，能从所有agenda file里非DONE状态的TODO项目都显示出来
+
+     S-M RET可以在当前项目下插入一个新的TODO 项目（与当前项目同一级别）
+
+**** 更改TODO项目的优先级
+     以下方式可以设置TODO ITEM的优先级：
+#+BEGIN_EXAMPLE
+     *** TODO [#A] 付手机费
+#+END_EXAMPLE
+
+     C-c , 可以设置一个TODO项目的优先级
+     S-Up/Down 可以增减一个TODO项目的优先级
+
+**** 增加TODO Item的状态
+
+     默认情况下，TODO Item只有两种状态，TODO和DONE。我们可以在.emacs中配置Org，以设置更多的中间状态，例如：
+     用下面的方法，我们可以增加一个TODO Item的中间状态，这些状态是顺序的，通常是工作流中的不同状态。
+
+#<<org-todo-keywords-setting>>
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-todo-keywords
+      '((sequence "TODO" "FEEDBACK" "VERIFY" "|" "DONE" "DELEGATED")))
+</pre>
+#+END_HTML
+
+     另一种可能性是，每个TODO Item可能有不同的类型，例如，公司的TODO Item，家里的TODO Item。或者，我们可能把TODO Item分配给不同的人，因此我们可以自定义TODO keywords以表示一个TODO Item的不同类型。
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(setq org-todo-keywords '((type "Fred" "Sara" "Lucy" "|" "DONE")))
+</pre>
+#+END_HTML
+
+     有的时候我们可能对不同的TODO Item有不同的状态，例如，交手机费这类简单的事情只有TODO和DONE两种状态，但是对于解决一个程序的bug可能有REPORT, BUG, KNOWNCAUSE, FIXED等状态。这样我们需要定义不同的状态子集(subset)：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-todo-keywords
+      '((sequence "TODO" "|" "DONE")
+        (sequence "REPORT" "BUG" "KNOWNCAUSE" "|" "FIXED")
+        (sequence "|" "CANCELED")))
+</pre>
+#+END_HTML
+
+     C-S-Right/Left可以从一个子集跳转到另一个子集，而S-RIGHT/LEFT会在所有状态之间遍历。
+
+     我们还可以用快捷键来迅速切换一个TODO Item的状态。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-todo-keywords
+      '((sequence "TODO(t)" "|" "DONE(d)")
+        (sequence "REPORT(r)" "BUG(b)" "KNOWNCAUSE(k)" "|" "FIXED(f)")
+        (sequence "|" "CANCELED(c)")))
+</pre>
+#+END_HTML
+
+     上面说的都是全局的设置，我们也可以针对一个文件进行设置，如：
+
+#+BEGIN_EXAMPLE
+#+TODO: TODO FEEDBACK VERIFY | DONE CANCELED
+     (这里也可以用 #+SEQ_TODO，和#+TODO效果是一样的）
+     对于类型的设置：
+#+TYP_TODO: Fred Sara Lucy Mike | DONE
+     对于多个子集的设置：
+#+TODO: TODO | DONE
+#+TODO: REPORT BUG KNOWNCAUSE | FIXED
+#+TODO: | CANCELED
+#+END_EXAMPLE
+
+**** 进度记录
+
+     最基本的就是记录当一个Item被标记为DONE时的时间戳了，另外，在一个Item完成后，可能会想要写点心得或者备注什么的，可以用如下配置实现：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-log-done 'time)
+(setq org-log-done 'note)
+</pre>
+#+END_HTML
+
+     Org Mode还能记录每个状态改变的时间，但恐怕不是所有人都需要这么精细的控制了。
+
+**** 把项目拆分成子项目
+
+     很简单，高一级的TODO下所有的低级TODO就是它的子项目，在各级TODO的标题的任意位置插入[/] 或者[%]即会根据其子项目的完成情况自动更新进度。
+
+     如果想要当所有子项目都标记为Done的时候，父项目也被标记为Done，可以在配置中添加如下设置：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun org-summary-todo (n-done n-not-done)
+  "Swith entry to DONE when all subentries are done, to TODO otherwise."
+  (let (org-log-done org-log-states)   ; turn off logging.
+    (org-todo (if (= n-not-done 0) "DONE" "TODO"))))
+</pre>
+#+END_HTML
+
+     另一种办法是，如果有大量的字项目，则可以使用check box来标记。
+
+     每一个item前只要加上一个[ ] 就变成了check box item, 这在TODO List Item里也是一样的。在TODO List里，C-c C-c可以切换check box item的选中与未选中的状态。
+
+#+BEGIN_EXAMPLE
+ ** TODO Test [1/3]
+ - [X] Only a test
+ - [ ] It's another test	
+ - [ ] Third test
+#+END_EXAMPLE
+
+	 和Check Box Item相关的快捷键：
+	 C-c C-c	切换Check Box的状态
+	 M-S-Ret	插入新的check box item.
+
+*** 标签
+**** 标签的基本知识
+     其实标签并不仅限于TODO Item，而是可以用在任何标题上。标签可以由所有字母，数字，_和@构成，标签必须有一个前导的:并且还必须有一个后继的:，比如，看起来是这样的，‘:work:’，多个标签可以用:分开，例如：‘:work:urgent:’。
+
+     需要用到的标签可以预先在配置文件里定义，和[[org-todo-keywords-setting][增加TODO Item的状态]]的方法一样，唯一的区别是这里用到的变量是org-tag-faces.
+
+     Tag是有继承性的，也就是说，假如一级标题的tag有work，则该级标题以下的所有子标题无论是否显式注明，都自动具有work的标签。例如：
+
+     : * Meeting with sb.               :work:
+     : ** Summary with sb1. 			 :boss:notes:
+     : *** TODO Prepare slides for him  :action:
+
+     这里，Summary with sb1的标签就是work, boss, notes，最后一项的标签就是work, boss, notes, action.
+
+**** 设置标签
+
+     首先当然可以手动在标题后设置标签，键入:后，M-Tab自动提供标签的补齐。
+
+     也可以用命令插入标签：
+
+     C-c C-q 为当前标题插入标签
+     C-c C-c 当光标在某标题栏时，为该标题插入标签（此时和C-c C-q功能一样）
+
+     默认情况下，org会动态维护一个Tag列表，即当前输入的标签若不在列表中，则自动加入列表以供下次补齐使用。
+
+     另一种方式是在配置文件中配置变量org-tag-alist全局性地预设一些tag，然后在org文件中设置：
+
+#+BEGIN_EXAMPLE
+     #+TAGS: @work @home @tennisclub
+     #+TAGS: laptop car pc sailboat
+#+END_EXAMPLE
+
+     这样，在该文件中只能使用个以上定义的7个标签。
+
+     如果想既使用预设的标签，又动态增加，则必须在文件中增加一个空的TAGS option.
+#+BEGIN_EXAMPLE
+     #+TAGS:
+#+END_EXAMPLE
+
+     在org中我们还可以给tag定义快捷键。对于全局的定义可以写在配置文件中：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-tag-alist '(("@work" . ?w) ("@home" . ?h) ("laptop" . ?l)))
+</pre>
+#+END_HTML
+
+     这样要标记@work，@home，laptop就只需要按w, h, l键即可。如果不是全局的定义，即指针对一个文件有效，我们可以在文件中定义，其中，\n表示换行，等效于分开写在两个TAGS里。
+
+#+BEGIN_EXAMPLE
+     #+TAGS: @work(w) @home(h) @tennisclub(t) \n laptop(l) pc(p)
+#+END_EXAMPLE
+
+     假如我们要让@work, @home, @tennisclub变成互斥的，则可以定义：
+
+#+BEGIN_EXAMPLE
+     #+TAGS: { @work(w) @home(h) @tennisclub(t) } laptop(l) pc(p)
+#+END_EXAMPLE
+
+     这也可以在配置文件中定义，但需要用dummy tag :startgroup和:endgroup包围起来。
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq org-tag-alist '((:startgroup . nil)
+                      ("@work" . ?w) ("@home" . ?h)
+                      ("@tennisclub" . ?t)
+                      (:endgroup . nil)
+                      ("laptop" . ?l) ("pc" . ?p)))
+</pre>
+#+END_HTML
+
+     C-c \ 可以用来查找某个tag下的所有项目
+     C-c / m 建立符合某tag的sparse tree
+     C-c a m 从所有agenda file里建立符合某tag的全局性列表
+     C-c a M 同上，但只检查TODO item或org-tags-match-list-sublevels里指定要检查的项目。
+
+*** 时间和日期
+
+    在TODO Item上我们通常还需要标记时间和日期，这里就包含了：
+
+    + 普通的时间和日期，比如该TODO ITEM的开始时间，例如下午三点开会等。
+      #+BEGIN_EXAMPLE
+      <2010-09-18 Sat 15:00>
+      #+END_EXAMPLE
+    - 每天，每周，每月，每年都重复的时间和日期，比如每周去一次健身房之类的。
+      #+BEGIN_EXAMPLE
+      * pick up Sam at school <2007-05-16 Wed 12:30 +1w>
+      #+END_EXAMPLE
+    - 表示一段时间
+      #+BEGIN_EXAMPLE
+      * 在上海开会 <2004-08-23 Mon>--<2004-08-26 Thu>
+      #+END_EXAMPLE
+    - 仅仅表示一段时间而已，不需要在其他模式中引用。（Inactive Timestamp）
+      #+BEGIN_EXAMPLE
+      * 今天吃饭吃到苍蝇了 [2010-09-28 Tue]
+      #+END_EXAMPLE
+
+    C-c >     打开Emacs Calendar
+    C-c <     把Emacs Calendar光标所在的日期插入到org mode光标所在处。
+    C-c C-y   当光标放在time range上时，计算两个timestamp之间的天数。
+    C-c !     用来添加一个inactive 的timestamp.
+
+    在我的配置文件中，我把C-c t 定义给了“插入一个timestamp”。
+
+    对于TODO item，我们常常需要指定什么时候开始这项工作，什么时候是截止日期，在org中分别是SCHEDULED 和DEADLINE. 
+
+   : *** TODO write article about the Earth for the Guide
+   : The editor in charge is [[bbdb:Ford Prefect]]
+   : DEADLINE: <2004-02-29 Sun>
+   :  
+   : *** TODO Call Trillian for a date on New Years Eve.
+   : SCHEDULED: <2004-12-25 Sat>
+
+   C-c C-d 插入一个Deadline
+   C-c C-s 插入一个Schedule
+   C-c / d 建立一个包含所有deadline的TODO项目的sparse tree
+   C-c / b 建立一个包含deadline在指定日期前的TODO项目的sparse tree
+   C-c / a 建立一个包含deadline在指定日期后的TODO项目的sparse tree
+
+
+
+*** 我的TODO LIST解决方案
+
+    我的TODO List方案基本上是在常规的待办事项上加上一些的GTD思想。
+
+    作为一个IT民工，我的生活比较简单，我不在家就在公司，两者都不在就基本在路上。因此我的TODO 项目的地点基本就是这三项。另外，有些项目需要用到电脑，有些不需要，有些都可以（比如看某本既有电子版又有纸版的书）。
+
+    下面列出了我用到的标签，TODO Item的中间状态很简单，就是TODO：未开始；INPROGRESS：进行中；和DONE：已完成。根据GTD的思想，有些TODO Item是2分钟内即可完成的，我把它们标记为immediately，立刻完成。wait是需要等待其他人或其他资源的；action是随时可以开始做的项目。
+
+#+BEGIN_EXAMPLE
+    #+TODO: TODO INPROGRESS | DONE
+    #+TAGS: @office(o) @home(h) @traffic(t)
+    #+TAGS: computer(c) nocomputer(n) either(e)
+    #+TAGS: immediately(i) wait(w) action(a)
+#+END_EXAMPLE
+
+    根据简化的GTD思想，TODO的项目分为Idea List; Task List; Project List; Someday/Maybe List; Reminder这五项。Reminder这一项和前四个关系不大，我用来记录一些备忘录，诸如下周末前要还房贷，某月某日是结婚纪念日之类的。这类提醒很多人喜欢记在Agenda里头，或者日历里。我更愿意直接写成条目放在Reminder里，每天看一下，这主要是因为我需要记住的事情不算太多，不需要用到Agenda。
+
+    每天抽两个时间做一下所谓的Mind Sweep，把所有想到可能要做的事情都扔进Idea List里头。每天抽一个时间整理一下Idea List，把不可能实现的直接删掉，把将来可能会做的，但现在肯定不做的扔到Someday/Maybe List中。Task List用于放一步即可完成的项目，Project List用于放比较复杂的项目，可能需要细分为许多个TODO Item，或者可能需要合作才能完成。
+
+    : * Idea List:
+    : * Task List:
+    : * Project List:
+    : * Someday/Maybe List:
+    : * Reminder:  
+
+    这样，举个例子，每天到公司或者到家开始工作的时候，首先要做的是三步：
+
+    - 按照GTD的说法是清空大脑，把脑子里的所有想法都列出来，然后放到Idea List。
+    - 用C-c \ 查询标签为@office或者@home 的未完成项目
+    - 浏览一下Reminder 里有没有和今天相关的事情。
+
+    然后，在每天结束工作的时候清理一下 Idea List。
+
+    ORG Mode我主要的用处就是拿来记笔记和做Todo List，似乎它还有很多其他功能，等我需要的时候再去研究吧。

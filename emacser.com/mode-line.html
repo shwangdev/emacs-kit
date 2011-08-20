@@ -1,0 +1,200 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-03-06 13:09:09 Saturday by ahei> -->
+
+<!-- Emacs的状态栏 － mode-line -->
+
+Emacs中的mode-line是指每个buffer下面的那一行显示buffer相关信息的区域, 相当于一般windows程序中的状态栏, 而它的格式则是由mode-line-format来控制, 这个mode-line-format非常灵活, 可以任意定制.<!--more-->
+
+mode-line-format可以为nil, 字符串, 符号, 列表, cons cell.
+<ul>
+	<li>nil的话很显然就表示啥都不显示, 多出了空间, 但是毕竟buffer中的相关信息都显示不了, 还是不方便.</li>
+	<li>字符串的话, 和c语言中printf格式类似, %结构含义如下:
+        %b -- 打印buffer名字
+        %f -- 打印buffer对应的文件名字
+        %F -- 打印frame名字
+        %* -- 根据buffer是否只读, 是否已修改显示%,*,或连字符(-)
+        %+ -- 根据buffer是否只读, 是否已修改显示*,%,或连字符(-)
+        %& -- 和%*类似, 不过忽略buffer的只读状态
+              %表示buffer只读, *表示buffer已修改, 对于只读buffer, %*打印%, 而%+打印*.
+        %s -- 打印buffer对应的进程状态
+        %l -- 打印当前行号
+        %c -- 打印当前列号, 不过`column-number-mode'必须打开
+        %i -- 打印当前buffer大小
+        %I -- 和%i类似, 不过使用k,M,G等单位来显示buffer大小
+        %p -- 显示当前位置的百分比, 光标在buffer顶端时显示Top, 在低端时显示Bot, 如果一屏能显示完所有buffer中的内容, 则显示All
+        %P -- 正好与%p相反
+        %n -- 显示当前buffer是否为Narrow状态
+        %t -- 当前buffer对应的文件是文本文件还是二进制文件
+        %z -- 显示输入法, 终端和buffer的编码
+        %Z -- 与%z类似, 不过还包括显示文件是dos格式还是unix格式
+        %e -- 当内存占满后, 会显示错误消息
+        %@ -- 如果当前buffer对应的文件为远程机器上的文件, 则显示@, 否则显示连字符(-)
+        $[ -- 对每一次递归编辑, 显示[, $]与此类似
+        %% -- 显示%
+        %- -- 显示能足够多的连字符(-)
+        与printf中的格式类似, %后面跟的数字限制将要显示的数据的宽度.</li>
+	<li>符号的话, 根据符号的值分为以下几种情况:
+<ol>
+	<li>字符串, 直接把字符串显示在mode-line上, 即使字符串里面含有%结构, 而且这个字符串的文本属性
+将会被忽略, 除非它被标记为`risky-local-variable'.</li>
+	<li>(eval :FORM), 对FORM进行求值后, 根据求值后的值的类型来进行递归处理, 这里的FORM是任意的elisp代码, 所以能非常灵活的控制mode-line.</li>
+	<li>`(:propertize ELT PROPS...), 显示指定属性后的字符串, 这样可以以丰富的色彩把字符串显示在mode-line上</li>
+	<li>列表的car为符号, 如果这个car不为nil, 则这个列表的cdr被递归处理, 否则这个列表的cddr被递归处理.</li>
+	<li>列表的car为字符串或者列表, 那么这个列表的每一个元素被递归处理, 然后再把每一个元素处理后的结果连接起来.</li>
+	<li>列表的car为整数, 对列表的cdr进行递归处理, 如果列表的car为正, 则把处理后的结果连在后面, 否则根据长度进行截断.</li>
+</ol>
+</li>
+</ul>
+我上面所说的基本上是翻译mode-line-format的docstring, 英文还可以的同志可以去看docstring, M-x describe-variable mode-line-format.
+
+具备了上面的知识, 我们现在可以对mode-line做一些高级的控制了, 比如在mode-line上用彩色显示当前buffer行数, 这个功能很方便，一眼就能看到当前buffer行数，就像下面这样：
+[caption width="586" caption="mode-line"]<a href="screenshots/mode-line/mode-line-lines.png" rel="lightbox"><img title="mode-line" src="screenshots/mode-line/mode-line-lines.png" alt="mode-line" width="964" height="175" /></a>[/caption]
+[caption width="586" caption="mode-line"]<a href="screenshots/mode-line/mode-line-lines2.png" rel="lightbox"><img title="mode-line2" src="screenshots/mode-line/mode-line-lines2.png" alt="mode-line" width="964" height="175" /></a>[/caption]
+mode-line-format的%结构只提供了%p显示当前位置功能，还有%l和%c显示当前行号和列号的功能，就是没有显示当前buffer行数的功能。我配置后的mode-line, 当你选中一块区域后, 会高亮显示这个区域有多少个字符, 没有选中区域的时候, 则显示当前buffer的大小，下面是效果图：
+[caption width="586" caption="mode line chars"]<a href="screenshots/mode-line/mode-line-chars.png" rel="lightbox"><img title="mode-line-chars" src="screenshots/mode-line/mode-line-chars.png" alt="mode line chars" width="955" height="175" /></a>[/caption]
+另外用与控制frame标题的frame-title-format的结构与mode-line-format完全相同.
+
+mode-line的配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/mode-line-settings.el" target="_blank">这里</a>。
+下面是我的mode-line配置，用彩色显示当前buffer行数的主要是函数`get-lines-4-mode-line'.
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2009-11-22 17:49:25 Sunday by ahei>
+
+;; 在mode-line上用彩色显示当前buffer行数
+(defun get-lines-4-mode-line ()
+  (let ((lines (count-lines (point-min) (point-max))))
+    (concat (propertize
+             (format "%dL" lines)
+             'mouse-face 'mode-line-highlight
+             ;; 加上颜色
+             'face 'mode-line-lines-face
+             'help-echo (format "%d lines" lines)) " ")))
+
+(size-indication-mode 1)
+(setq-default mode-line-buffer-identification (propertized-buffer-identification "%b"))
+
+(if is-after-emacs-23
+    (setq-default
+     mode-line-position
+     `((:eval (get-lines-4-mode-line))
+       (1 ,(propertize
+            "%p"
+            'local-map mode-line-column-line-number-mode-map
+            'mouse-face 'mode-line-highlight
+            'help-echo "Size indication mode\n\
+mouse-1: Display Line and Column Mode Menu"))
+       (size-indication-mode
+        (" "
+         (:eval
+          (propertize
+           (if (and transient-mark-mode mark-active)
+               (format "%d chars" (abs (- (mark t) (point))))
+             "%I")
+           'face (and transient-mark-mode mark-active 'region)
+           'local-map mode-line-column-line-number-mode-map
+           'mouse-face 'mode-line-highlight
+           'help-echo "Buffer position, mouse-1: Line/col menu"))))
+       (line-number-mode
+        ((column-number-mode
+          (1 ,(propertize
+               " (%l,%c)"
+               'local-map mode-line-column-line-number-mode-map
+               'mouse-face 'mode-line-highlight
+               'help-echo "Line number and Column number\n\
+mouse-1: Display Line and Column Mode Menu"))
+          (1 ,(propertize
+               " L%l"
+               'local-map mode-line-column-line-number-mode-map
+               'mouse-face 'mode-line-highlight
+               'help-echo "Line Number\n\
+mouse-1: Display Line and Column Mode Menu"))))
+        ((column-number-mode
+          (1 ,(propertize
+               " C%c"
+               'local-map mode-line-column-line-number-mode-map
+               'mouse-face 'mode-line-highlight
+               'help-echo "Column number\n\
+mouse-1: Display Line and Column Mode Menu")))))))
+  (let* ((help-echo "mouse-1: select (drag to resize), mouse-2 = C-x 1, mouse-3 = C-x 0"))
+    (setq-default
+     mode-line-position
+     `((:eval (get-lines-4-mode-line))
+       (1 ,(propertize "%p" 'help-echo help-echo))
+       (size-indication-mode
+        (1 ,(propertize " %I" 'help-echo help-echo)))
+       (line-number-mode
+        ((column-number-mode
+          (1 ,(propertize " (%l,%c)" 'help-echo help-echo))
+          (1 ,(propertize " L%l" 'help-echo help-echo))))
+        ((column-number-mode
+          (1 ,(propertize " C%c" 'help-echo help-echo)))))))))
+
+(let* ((help-echo
+        "mouse-1: Select (drag to resize)\n\
+mouse-2: Make current window occupy the whole frame\n\
+mouse-3: Remove current window from display")
+       (recursive-edit-help-echo "Recursive edit, type C-M-c to get out")
+       (standard-mode-line-modes
+        (list
+         " "
+         (propertize "%[" 'help-echo recursive-edit-help-echo)
+         (propertize "(" 'help-echo help-echo)
+         `(:propertize ("" mode-name)
+                       help-echo "Major mode\n\
+mouse-1: Display major mode menu\n\
+mouse-2: Show help for major mode\n\
+mouse-3: Toggle minor modes"
+                       mouse-face mode-line-highlight
+                       local-map ,mode-line-major-mode-keymap)
+         '("" mode-line-process)
+         `(:propertize ("" minor-mode-alist)
+                       mouse-face mode-line-highlight
+                       help-echo "Minor mode\n\
+mouse-1: Display minor mode menu\n\
+mouse-2: Show help for minor mode\n\
+mouse-3: Toggle minor modes"
+                       local-map ,mode-line-minor-mode-keymap)
+         (propertize "%n" 'help-echo "mouse-2: Remove narrowing from the current buffer"
+                     'mouse-face 'mode-line-highlight
+                     'local-map (make-mode-line-mouse-map
+                                 'mouse-1 #'mode-line-widen))
+         (propertize ")" 'help-echo help-echo)
+         (propertize "%]" 'help-echo recursive-edit-help-echo))))
+  (setq-default mode-line-modes standard-mode-line-modes)
+  (setq-default mode-line-format
+                `("%e%t"
+                  mode-line-mule-info
+                  mode-line-client
+                  mode-line-modified
+                  mode-line-remote
+                  " "
+                  mode-line-buffer-identification
+                  ,(propertize " " 'help-echo help-echo)
+                  mode-line-position
+                  (vc-mode vc-mode)
+                  mode-line-modes
+                  (which-func-mode (" " which-func-format))
+                  (working-mode-line-message (" " working-mode-line-message))
+                  ,(propertize "-%-" 'help-echo help-echo))))
+
+(setq mode-line-format-bak mode-line-format)
+(setq mode-line t)
+(defun toggle-mode-line ()
+  "Toggle mode-line."
+  (interactive)
+  (if mode-line
+      (setq-default mode-line-format nil)
+    (setq-default mode-line-format mode-line-format-bak))
+  (setq mode-line (not mode-line)))
+
+;; 在标题栏显示登陆名称和文件名
+(setq frame-title-format
+      '((:eval
+         (let ((login-name (getenv-internal "LOGNAME")))
+           (if login-name (concat login-name "@") "")))
+        (:eval (system-name))
+        ":"
+        (:eval (or (buffer-file-name) (buffer-name)))))
+</pre>

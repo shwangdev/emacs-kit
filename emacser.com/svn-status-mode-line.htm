@@ -1,0 +1,286 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-11 20:07:03 Sunday by ahei" -->
+
+<!-- 在mode-line上标记svn状态 -->
+
+<!-- Emacs, Elisp, 中级 -->
+
+<img class="alignright" title="Subversion" src="screenshots/subversion-logo.png" width="110" height="90"/>
+
+<a href="http://www.xsteve.at/prg/vc_svn/" target="_blank">psvn.el</a>是一款Emacs下的svn插件，前段时间把Emacs升级到23，升级整理的过程中，看到psvn.el，遂去它的主页把它的最新版本down下来，试了一下，果然功能又强大多了，一个我一直想要的功能就是在<a href="mode-line.htm" target="_blank">mode-line</a>上显示当前文件的svn状态，比如是否修改过，就像下面这样：<!--more-->
+[caption width="586" caption="svn文件，未修改"]<a href="screenshots/svn/svn-mode-line-up-to-date.png" rel="lightbox"><img src="screenshots/svn/svn-mode-line-up-to-date.png" width="964" height="175" /></a>[/caption]
+[caption width="586" caption="svn文件，已修改"]<a href="screenshots/svn/svn-mode-line-edited.png" rel="lightbox"><img src="screenshots/svn/svn-mode-line-edited.png" width="964" height="175" /></a>[/caption]
+[caption width="586" caption="svn文件，刚增加"]<a href="screenshots/svn/svn-mode-line-added.png" rel="lightbox"><img src="screenshots/svn/svn-mode-line-added.png" width="964" height="175" /></a>[/caption]
+psvn用一个带有颜色的圆表示文件的状态，绿色的圆表示未修改过，淡红色的圆表示已经修改过。
+
+由于psvn包只有一个文件psvn.el，所以它那个圆应该不是事先做好的图片，应该是程序里面生成的。那这个就比较有意思了，竟然可以在Emacs中画圆，赶快去瞧瞧它是杂实现的。
+
+由于这个圆是在mode-line上画的，直接去psvn.el里面去搜索mode-line，搜到一个mode-line-process，还有一个：
+<pre lang="lisp">
+(setq svn-status-mode-line-process-status (format " running %s" cmdtype))
+</pre>
+平时运行svn-status命令的时候，会看到状态栏显示running，看来是控制这个mode-line-process来实现的，看一下mode-line-process的文档：
+<pre lang="lisp" line="1">
+mode-line-process is a variable defined in `bindings.el'.
+Its value is nil
+
+  Automatically becomes buffer-local when set in any fashion.
+
+Documentation:
+Mode-line control for displaying info on process status.
+Normally nil in most modes, since there is no process to display.
+</pre>
+看来真是它，我们来试试：
+<pre lang="lisp">
+(setq mode-line-process " hi, I'm mode-line-process")
+</pre>
+C-x C-e执行上面的语句，mode-line变成：
+[caption width="586" caption="mode-line-process"]<a href="screenshots/mode-line/mode-line-process.png" rel="lightbox"><img src="screenshots/mode-line/mode-line-process.png" width="964" height="175" /></a>[/caption]
+果然!
+
+继续搜索mode-line，找到一个函数：
+<pre lang="lisp" line="1">
+(defun svn-status-state-mark-modeline-dot (color)
+  (propertize "    "
+              'help-echo 'svn-status-state-mark-tooltip
+              'display
+              `(image :type xpm
+                      :data ,(format "/* XPM */
+static char * data[] = {
+\"18 13 3 1\",
+\"  c None\",
+\"+ c #000000\",
+\". c %s\",
+\"                  \",
+\"       +++++      \",
+\"      +.....+     \",
+\"     +.......+    \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"     +.......+    \",
+\"      +.....+     \",
+\"       +++++      \",
+\"                  \"};"
+                                     color)
+                      :ascent center)))
+</pre>
+看这函数名，代码和图形，有点像是它画的圆，那么我们再来看看这个svn-status-state-mark-modeline-dot函数都哪里调用了。继续查找，只有一个地方调用了：
+<pre lang="lisp" line="1">
+(defun svn-status-install-state-mark-modeline (color)
+  (push `(svn-status-state-mark-modeline
+          ,(svn-status-state-mark-modeline-dot color))
+        mode-line-format)
+  (force-mode-line-update t))
+</pre>
+而svn-status-install-state-mark-modeline是svn-status-update-state-mark调用的，svn-status-update-modeline又调用了svn-status-update-state-mark，看来没错了，应该就是svn-status-state-mark-modeline-dot画的圆，为了更加确定一点，来做个实验。
+
+改下svn-status-state-mark-modeline-dot的函数变成这样：
+<pre lang="lisp" line="1">
+(defun generate-circle (tip space edge inside)
+  "Generate a circle."
+  (propertize " "
+              'help-echo tip
+              'display
+              `(image :type xpm
+                      :data ,(format "/* XPM */
+static char * data[] = {
+\"18 13 3 1\",
+\"  c %s\",
+\"+ c %s\",
+\". c %s\",
+\"                  \",
+\"       +++++      \",
+\"      +.....+     \",
+\"     +.......+    \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"    +.........+   \",
+\"     +.......+    \",
+\"      +.....+     \",
+\"       +++++      \",
+\"                  \"
+};"
+                                     space edge inside)
+                      :ascent center)))
+</pre>
+然后执行下面的代码：
+<pre lang="lisp">
+(insert (generate-circle "我是圆" "None" "black" "red"))
+</pre>
+出现下面的截图：
+[caption width="586" caption="emacs中画圆"]<a href="screenshots/circle/emacs-circle.png" rel="lightbox"><img src="screenshots/circle/emacs-circle.png" width="964" height="175" /></a>[/caption]
+<pre lang="lisp">
+(insert (generate-circle "我是月环食" "None" "yellow" "red"))
+</pre>
+[caption width="586" caption="emacs中画月环食"]<a href="screenshots/circle/moon-circle.png" rel="lightbox"><img src="screenshots/circle/moon-circle.png" width="964" height="175" /></a>[/caption]
+再来一张膏药旗
+<pre lang="lisp">
+(insert (generate-circle "我是膏药旗" "white" "yellow" "red"))
+</pre>
+[caption width="586" caption="Emacs中画膏药旗"]<a href="screenshots/circle/plaster-flag.png" rel="lightbox"><img src="screenshots/circle/plaster-flag.png" width="964" height="175" /></a>[/caption]
+再画个立方体：
+<pre lang="lisp" line="1">
+(defun generate-cube (tip)
+  "Generate a cube."
+  (propertize " "
+              'help-echo tip
+              'display
+              `(image :type xpm
+                      :data ,(format "/* XPM */
+static char * data[] = {
+\"32 39 5 1\",
+\".      c none\",
+\"+      c black\",
+\"@      c #3070E0\",
+\"#      c #F05050\",
+\"$      c #35E035\",
+\"................+...............\",
+\"..............+++++.............\",
+\"............+++++@@++...........\",
+\"..........+++++@@@@@@++.........\",
+\"........++++@@@@@@@@@@++........\",
+\"......++++@@++++++++@@@++.......\",
+\".....+++@@@+++++++++++@@@++.....\",
+\"...+++@@@@+++@@@@@@++++@@@@+....\",
+\"..+++@@@@+++@@@@@@@@+++@@@@@++..\",
+\".++@@@@@@+++@@@@@@@@@@@@@@@@@@++\",
+\".+#+@@@@@@++@@@@+++@@@@@@@@@@@@+\",
+\".+##++@@@@+++@@@+++++@@@@@@@@$@.\",
+\".+###++@@@@+++@@@+++@@@@@++$$$@.\",
+\".+####+++@@@+++++++@@@@@+@$$$$@.\",
+\".+#####+++@@@@+++@@@@++@$$$$$$+.\",
+\".+######++++@@@@@@@++@$$$$$$$$+.\",
+\".+#######+##+@@@@+++$$$$$$@@$$+.\",
+\".+###+++##+##+@@++@$$$$$$++$$$+.\",
+\".+###++++##+##+@@$$$$$$$@+@$$@+.\",
+\".+###++++++#+++@$$@+@$$@++$$$@+.\",
+\".+####+++++++#++$$@+@$$++$$$$+..\",
+\".++####++++++#++$$@+@$++@$$$$+..\",
+\".+#####+++++##++$$++@+++$$$$$+..\",
+\".++####+++##+#++$$+++++@$$$$$+..\",
+\".++####+++####++$$++++++@$$$@+..\",
+\".+#####++#####++$$+++@++++@$@+..\",
+\".+#####++#####++$$++@$$@+++$@@..\",
+\".++####++#####++$$++$$$$$+@$@++.\",
+\".++####++#####++$$++$$$$$$$$+++.\",
+\".+++####+#####++$$++$$$$$$$@+++.\",
+\"..+++#########+@$$+@$$$$$$+++...\",
+\"...+++########+@$$$$$$$$@+++....\",
+\".....+++######+@$$$$$$$+++......\",
+\"......+++#####+@$$$$$@++........\",
+\".......+++####+@$$$$+++.........\",
+\".........++###+$$$@++...........\",
+\"..........++##+$@+++............\",
+\"...........+++++++..............\",
+\".............++++...............\"
+};"
+                                     )
+                      :ascent center)))
+</pre>
+<pre lang="lisp">
+(insert (generate-cube "我是立方体"))
+</pre>
+[caption width="586" caption="Emacs中画立方体"]<a href="screenshots/circle/emacs-cube.png" rel="lightbox"><img src="screenshots/circle/emacs-cube.png" width="964" height="175" /></a>[/caption]
+再来一张更眩的：
+<pre lang="lisp" line="1">
+(defun generate-compact-disk (tip)
+  "Generate one compact disk."
+  (propertize " "
+              'help-echo tip
+              'display
+              `(image :type xpm
+                      :data ,(format "/* XPM */
+static char * data[] = {
+\"16 16 8 1\",
+\"    c None s None\",
+\".   c #808080\",
+\"X   c #FFFF00\",
+\"o   c #c0c0c0\",
+\"O   c black\",
+\"+   c #00FFFF\",
+\"@   c #00FF00\",
+\"#   c white\",
+\"     .....      \",
+\"   ..XXoooOO    \",
+\"  .+XXXoooooO   \",
+\" .@++XXoooo#oO  \",
+\" .@@+XXooo#ooO  \",
+\".oo@@+Xoo#ooooO \",
+\".ooo@+.O.oooooO \",
+\".oooo@O#OoooooO \",
+\".oooo#.O.+ooooO \",
+\".ooo#oo#@X+oooO \",
+\" .o#oooo@X++oO  \",
+\" .#ooooo@XX++O  \",
+\"  .ooooo@@XXO   \",
+\"   ..ooo@@OO    \",
+\"     ..OOO      \",
+\"                \"
+};"
+                                     )
+                      :ascent center)))
+</pre>
+<pre lang="lisp">
+(insert (generate-compact-disk "我是光盘"))
+</pre>
+[caption width="586" caption="Emacs中画光盘"]<a href="screenshots/circle/emacs-compact-disk.png" rel="lightbox"><img src="screenshots/circle/emacs-compact-disk.png" width="964" height="175" /></a>[/caption]
+其实, 只要你明白xpm的格式, 自己完全可以构建那个data, 画出各种各样的图形.
+
+现在还有个问题，怎么定制这些圆的颜色呢？
+
+我们来看看svn-status-update-mode-line的代码：
+<pre lang="lisp" line="1">
+(defun svn-status-update-modeline ()
+  "Update modeline state dot mark properly"
+  (when (and buffer-file-name (svn-status-in-vc-mode?))
+    (svn-status-update-state-mark
+     (svn-status-interprete-state-mode-color
+      (vc-svn-state buffer-file-name)))))
+</pre>
+svn-status-update-mode-line把
+<pre lang="lisp" line="1">
+(svn-status-interprete-state-mode-color
+      (vc-svn-state buffer-file-name))
+</pre>
+作为参数传给svn-status-update-state-mark，而svn-status-update-state-mark代码：
+<pre lang="lisp" line="1">
+(defun svn-status-update-state-mark (color)
+  (svn-status-uninstall-state-mark-modeline)
+  (svn-status-install-state-mark-modeline color))
+</pre>
+svn-status-update-state-mark的参数为颜色，这就是说svn-status-interprete-state-mode-color的作用应该是得到颜色，且来看看它的定义：
+<pre lang="lisp" line="1">
+(defsubst svn-status-interprete-state-mode-color (stat)
+  "Interpret vc-svn-state symbol to mode line color"
+  (case stat
+    ('edited "tomato"      )
+    ('up-to-date "GreenYellow" )
+    ;; what is missing here??
+    ;; ('unknown  "gray"        )
+    ;; ('added    "blue"        )
+    ;; ('deleted  "red"         )
+    ;; ('unmerged "purple"      )
+    (t "red")))
+</pre>
+这个函数的参数是当前文件的svn状态，返回一个颜色字符串。
+看来只要改这个函数就能定制颜色了。
+等等，难道要直接修改psvn.el吗？当然不需要，而且那是个不好的习惯。由于Elisp不像c等编译型语言，它是解释型语言(也可以编译成字节码)，如果你多处定义了同一个函数，后面的会覆盖的前面的定义。根据这个特性，我们就可以在我们自己的配置文件中重新定义一下svn-status-interprete-state-mode-color就可以了，重新定义如下：
+<pre lang="lisp" line="1">
+(defsubst svn-status-interprete-state-mode-color (stat)
+  "Interpret vc-svn-state symbol to mode line color"
+  (case stat
+    ('up-to-date "GreenYellow")
+    ('edited     "tomato")
+    ('unknown    "gray")
+    ('added      "blue")
+    ('deleted    "red")
+    ('unmerged   "purple")
+    (t           "black")))
+</pre>
+这样，未修改的文件绿色圆，修改过的淡红色圆，增加的文件蓝色圆，删除的文件红色圆。

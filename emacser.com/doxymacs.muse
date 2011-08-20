@@ -1,0 +1,117 @@
+#title 使用doxymacs写标准代码注释
+doxymacs = doxygen+emacs。
+如果你不知道doxygen，请[[http://fangzhzh.admindigest.com/2010/06/generating-beautiful-document-for-ur-codes-using-doxygen/][移步这里]]，或者google之。
+
+doxymacs [[http://doxymacs.sourceforge.net/][官网]]，现在版本是1.8.0。
+
+特性：
+ - 从emacs中，查找某个符号的文档，显示在你选择的浏览器中。
+ - 在源代码中方便的插入Doxgen Style格式的注释。
+ - 可选：实用外部XML parser加速构建完整列表。
+ - 高亮Doxygen关键字。
+
+特性1,3,4我用的比较少，重点介绍第二个。
+
+<literal><literal>
+<!--more-->
+</literal>
+
+** 安装
+Doxymacs 依赖一下包:
+
+W3      http://www.cs.indiana.edu/usr/local/www/elisp/w3/docs.html
+
+tempo   http://www.lysator.liu.se/~davidk/elisp/
+
+libxml2 http://www.libxml.org/
+
+将doxymacs.el放到load-path路径下，在.emacs中加入下面语句
+<src lang="lisp">
+(require 'doxymacs)
+</src>
+命令doxymacs-mode就可以启动，如让doxymacs-mode随着c/c++ mode自动启动，
+<src lang="lisp">
+(add-hook 'c-mode-common-hook 'doxymacs-mode)
+</src>
+
+
+** 代码中插入doxygen注释
+
+如果一切正常，那么在启动一个c/c++文件后，就进入了doxymacs-mode。
+可以使用以下快捷键：
+
+| 命令    | 英文解释                                                   | 中文解释 |
+| C-c d ? | will look up documentation for the symbol under the point. | 查找当前鼠标点下的符号的文档 |
+| C-c d r | will rescan your Doxygen tags file.                        | 重新扫描tags文件   |
+| C-c d f | will insert a Doxygen comment for the next function.       | 为函数插入Doxygen注释  |
+| C-c d i | will insert a Doxygen comment for the current file.        | 为文件插入Doxygen注释  |
+| C-c d ; | will insert a Doxygen comment for the current member.      | 为当前成员插入Doxygen注释 |
+| C-c d m | will insert a blank multiline Doxygen comment.             | 插入多行注释   |
+| C-c d s | will insert a blank singleline Doxygen comment.            | 插入单行注释   |
+| C-c d @ | will insert grouping comments around the current region.   | 插入环绕当前区域的注释 |
+
+到此，doxymacs基本就可以工作正常了。
+工作流程如下:
+<example>
+			   
+      +------------+            +------------+          +------------+
+      |  coding    |----------->| commenting |--------->| generating |
+      |            |            |            |          | documents  |
+      +------------+            +------------+          +------------+
+</example>
+** 更改默认doxygen注释样式
+方便的插入doxygen注释还不是最精彩的，最精彩的当然是用户自定义样式了。
+*** 改变默认的doxygen注释类别
+这里我们首先修改变量doxymacs-doxygen-style，doxymacs默认是javaDoc，我们把它改为c++。
+*** 定制doxygen的注释模板
+doxymacs.el中有定义doxymacs-C++-file-comment-template,blablabla。顾名思义，此物就是c++-file-comment的模板。
+比如，根据我们公司注释的规定，我在.emacs中加入如下代码:
+<src lang="lisp">
+(defconst doxymacs-C++-file-comment-template
+ '(
+   "/******************************************************************************" > n
+   "*" > n
+   "* " "FILE NAME   :"
+   (if (buffer-file-name)
+       (file-name-nondirectory (buffer-file-name))
+     "") > n
+   "*" > n
+   "*" " DESCRIPTION :"> n
+   "*" > n
+   "*" "    "> n   
+   "*" > n
+   "*" " HISTORY     :"> n
+   "*" > n
+   "*" "    See Log at end of file"> n
+   "*" > n
+   "*" "Copyright (c) 2006, VIA Technologies, Inc."> n
+   "*" "******************************************************************************/"> n)
+ "Default C++-style template for file documentation.")
+</src>
+这样，我在test.cpp文件，实用C-c d i，会生成如下代码
+<example>
+/******************************************************************************
+ *
+ * FILE NAME   :test.cpp
+ *
+ * DESCRIPTION :
+ *
+ *    
+ *
+ * HISTORY     :
+ *
+ *    See Log at end of file
+ *
+ *Copyright (c) 2006, VIA Technologies, Inc.
+ *******************************************************************************/
+</example>
+
+如果你使用c++的话，你还有下边几个变量需要定制，
+| 变量                                           | 作用     |
+| doxymacs-C++-function-comment-template         | 函数     |
+| doxymacs-C++-blank-multiline-comment-template  | 多行注释 |
+| doxymacs-C++-blank-singleline-comment-template | 单行注释 |
+
+使用其他语言类同。
+
+enjoy!

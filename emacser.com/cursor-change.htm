@@ -1,0 +1,103 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-03-06 13:08:37 Saturday by ahei> -->
+
+<!-- Emacs才是世界上最强大的IDE － 智能的改变光标形状 -->
+
+Emacs默认情况下, Emacs的光标是一个小方块, 相比一般程序里面的一个小长条形状, 可以很快的在一大片文字中看到当前光标在哪, 但是缺点就是, 在编辑的时候不太方便, 因为那个小方块是覆盖在整个字母上的, 很多人刚开始用的时候都不知道当他敲进一个字母的时候, 这个字母是插到当前字母的后面还是前面, 这点, 光标显示为小长条就比较容易分辨了, 那么我们怎么结合它们两者的优点呢? Emacs再一次体现了它那强大的扩展性, <a href="http://www.emacswiki.org/emacs/cursor-chg.el" target="_blank">cursor-chg</a>正是利用了Emacs的扩展性, 得以成功结合上述两种光标的优点, 它在以下方面进行改进:<!--more-->
+<ul>
+  <li>当你在Emacs中操作的时候, 光标为长条状, 就像这样：
+    [caption width="150" caption="在Emacs中显示长条状光标"]<a href="screenshots/cursor-change-bar.png" rel="lightbox"><img title="cursor change bar" src="screenshots/thumbs/thumbs_cursor-change-bar.png" alt="在Emacs中显示长条状光标" width="150" height="150" /></a>[/caption]
+    一旦你不操作Emacs, Emacs处于空闲状态时, 光标就由长条状变成方块状, 这样方便你定位光标, 因为Emacs处于空闲状态, 说明你正在盯着Emacs看文本, 或者你离开了一会, 不在编辑状态, 变成方块状方便你定位光标. </li>
+  <li>当当前buffer为只读buffer, 或者当前编辑模式为覆写模式(你按了一下insert键), 或者你进入了`view-mode', 说明你正在浏览buffer, 或者是键入的字符要覆盖掉当前的字符, 这时候光标会由长条状变成方块状, 合情合理!</li>
+</ul>
+经过以上改进, 我们编辑, 定位光标都方便极了.
+
+我加了一个小函数, 更方便的控制是否使用cursor-chg. 我增加的代码在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/cursor-change.el" target="_blank">这里</a>, 内容如下:
+<pre lang="lisp" line="1">
+;;; dired-lis.el --- Change cursor smartly
+
+;; Copyright (C) 2009 ahei
+
+;; Author: ahei <ahei0802@126.com>
+;; Keywords: cursor
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
+
+;;; Commentary:
+;;
+;; Change cursor smartly
+
+;;; Installation:
+;;
+;; Copy cursor-change.el to your load-path and add following statement to
+;; your .emacs:
+;;
+;; (require 'cursor-change)
+;;
+;; then M-x cursor-change-mode to use this library.
+
+;;; History:
+;;
+;; 2009-11-22
+;;      * initial version 1.0.
+
+;;; Code:
+
+(require 'cursor-chg)
+
+(defgroup cursor-change nil
+  "Group for cursor-change."
+  :group 'cursor
+  :prefix "cursor-change-")
+
+(defvar cursor-change-old-cursor-type nil "Cursor type before toggle on function `cursor-change-mode'.")
+(defvar cursor-change-old-blink-cursor-mode nil "`blink-cursor-mode' before toggle on function `crsor-change-mode'.")
+
+(setq curchg-default-cursor-color "green")
+
+;;;###autoload
+(define-minor-mode cursor-change-mode
+  "Toggle `cursor-change-mode'."
+  :global t
+  :group 'cursor-change
+  (if cursor-change-mode
+      (progn
+        (setq cursor-change-old-cursor-type (cursor-change-get-cursor-type))
+        (setq cursor-change-old-blink-cursor-mode blink-cursor-mode))
+    (blink-cursor-mode (if cursor-change-old-blink-cursor-mode 1 -1)))
+  (toggle-cursor-type-when-idle cursor-change-mode)
+  (change-cursor-mode cursor-change-mode)
+  (unless cursor-change-mode
+    (curchg-set-cursor-type cursor-change-old-cursor-type)))
+
+(defun cursor-change-get-cursor-type (&optional frame)
+  "Get cursor type of frame FRAME."
+  (cdr (assq 'cursor-type (frame-parameters frame))))
+
+(defun curchg-change-cursor-on-overwrite/read-only ()
+  "Set cursor type differently for overwrite mode, function `view-mode', and read-only buffer.
+That is, use one cursor type for overwrite mode and read-only buffers,
+and another cursor type otherwise."
+  (curchg-set-cursor-type
+   (if (or buffer-read-only overwrite-mode view-mode)
+       curchg-overwrite/read-only-cursor-type
+     curchg-default-cursor-type)))
+
+(provide 'cursor-change)
+
+;;; cursor-change.el ends here
+</pre>

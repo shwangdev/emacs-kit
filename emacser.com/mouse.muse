@@ -1,0 +1,196 @@
+#title Emacs 下鼠标的运用
+
+* 默认配置
+
+  用鼠标左键 click 一个位置，可以以移动光标到这个位置，这是
+  最基本，也是最自然的功能了。
+
+<src type=".el">
+(global-set-key (kbd "<mouse-1>") 'mouse-set-point)
+(global-set-key (kbd "<down-mouse-1>") 'mouse-drag-region)
+</src>
+ 这段代码不用放在配置文件中，因为默认配置就是这样。
+
+ 尽管是默认配置，我还是把他们写出了，因为有的时候我们想改变
+ 默认配置。把默认的功能对应到其他的按键方式上去。
+
+**  鼠标左键的功能
+***  用鼠标选择 region
+
+  左键的拖拉，可以选择一片区域，这片选择的 
+  region 就自动拷贝起来。以后可以用 C-y 把选择的 region 粘贴
+  出来。此时 down-mouse-1 事件和 mouse-drag-region 帮定在一
+  起。
+
+  如果拖拉到窗口的外面，那么会自动滚动窗口中的内容，直到你选
+  择到你要的位置，这样就可以选择到超过一个屏幕范围的内容了。
+ 
+*** 用鼠标选择一个语法单元
+
+  如果 double click 左键，那么就会根据点取位置上的内容，来选择
+  不同的内容。
+
+  如果点取的字符是一个 "symbol" 的语法，那么就会选择一个
+  symbol 。 这样说有一些过于技术性的描述了。
+  
+  我们知道， Emacs 支持很多 mode ，例如 c mode, c++ mode ,
+  lisp mode 等等等等， 每一个 mode 都定义不同的语法。 例如
+  lisp mode 下 ``-'' 可以作为 symbol 的名字，在 c mode 下，
+  ``_'' 下划线可以作为变量的名字。他们的 如果你双击在这个这
+  样的字符上，那么就会选择整个变量名字。 具体来说，假如是在c
+  mode 下，有一个变量 ``m_a_big_number'' ，如果双击在在下划
+  线上，那么选择整个变量名称，如果双击在一个, 例如 n , 那么
+  选择的就是这个字母所在的单词上，就是 number 。
+
+  如果点取的字符是一个括号的话，那么就会选取这个括号扩住的部
+  分。 例如在 c mode 下 .
+<src type=".c">
+for(i=0;i<100;i++){
+    printf("Hello World");
+}
+</src>
+
+  点取 ``{'' 就会选择到另一个 ``}'' 的部分，同样道理应用于单
+  引号双，双引号，中括号，圆括号。
+
+*** 选择一行文字
+
+  快速三次连续点击左键。
+
+*** 来点高难动作
+
+  双击加拖拉， 分解动作是 down up down move up .
+  可以以单词的边界来选择 region 。类似于 touch pad 的笔记本
+  触摸鼠标的拖拉.
+
+  三击加拖拉，分解动作时 down up down up down move up. 可以
+  按行来选择 region 。
+ 
+** 鼠标中键的功能
+
+*** 粘贴
+
+   click 鼠标中键，可以在鼠标所点的位置粘贴文字。
+<src type=".el">
+(global-set-key (kbd "<mouse-2>") 'mouse-yank-at-click)
+</src>
+ 这段代码不用放在配置文件中，因为默认配置就是这样。
+
+*** 点取对象
+
+  在有些 buffer 中，不能修改 buffer 的内容，那么就鼠标
+  中键的上面所说的作用也就没有什么意义了，于是，一般都把他们
+  帮定在一个类似于按回车的功能上，例如自动补齐的时候，帮助等
+  等。有点类似于浏览器的左键的功能，点击了一个超连接。
+
+** 鼠标右键的功能
+
+  第一次 click 后，把 mark 设置在鼠标点过的位置，选择一个
+  region , 也就是类似鼠标左键的拖拉。
+
+  第二次 click 后，如果 click 的位置和上一次的一样，那么完成
+  的是剪切上一次选中的内容。如果 click 的位置和上一次不一样，
+  那么完成的功能是重新选择一个 region  .
+
+  也就是说，连续两次用鼠标右键选择相同的 region ，可以 cut 掉这
+  个 region 。
+
+<src type=".el">
+(global-set-key (kbd "<mouse-3>") 'mouse-save-then-kill)
+</src>
+ 这段代码不用放在配置文件中，因为默认配置就是这样。  
+
+
+** 其他
+
+*** Ctrl + 点击左键
+
+  按住 Ctrl 点击鼠标左键，可以调出一个菜单，这个菜单按 mode
+  分组选择切换 buffer 。
+ 
+ <src type="elisp">
+ (global-set-key (kbd "<C-down-mouse-1>") 'mouse-buffer-menu)
+ </src>
+  这段代码不用放在配置文件中，因为默认配置就是这样。  
+
+  我认为把它帮定在单击事件上也不错。
+ <src type="elisp">
+ (global-set-key (kbd "<C-down-mouse-1>") nil) ;; 去掉原来的帮定关系
+ (global-set-key (kbd "<C-mouse-1>") 'mouse-buffer-menu)
+ </src>
+
+*** Shift + 单击左键
+
+   可以选择字体。
+ 
+ <src type="elisp">
+ (global-set-key (kbd "<S-down-mouse-1>") 'mouse-set-font)
+ </src>
+  这段代码不用放在配置文件中，因为默认配置就是这样。  
+
+  我认为这个功能不常用，可以用来帮定到其他的功能上去。
+
+*** Alt + 鼠标
+
+   这里的很多功能都是和 secondary selection 有关的,如果不常
+   用 secondary selection 的话,可以考虑把这些键帮定在其他功
+   能上.
+
+***  Ctrl + 鼠标右键
+
+   可以调出和编辑功能相关的功能菜单.
+    
+ <src type="elisp">
+ (global-set-key (kbd "<C-down-mouse-2>") 'mouse-popup-menuar-stuff)
+ </src>
+  这段代码不用放在配置文件中，因为默认配置就是这样。
+
+
+* 非默认配置
+
+** 没有滚轴鼠标的朋友看过来.
+
+ <src type="elisp">
+ (require 'mouse-drag)
+ (global-set-key (kbd "<S-down-mouse-1>") 'mouse-drag-throw)
+ </src>
+   这个功能类似于在 IE 中单击滚轴鼠标的中键,然后出现一个图案,
+   移动鼠标就可以滚动窗口中的内容, 滚动的速度可以和鼠标离图案
+   的远近有关系.  这里是帮定了 Shift + 拖动鼠标左键.
+
+
+   如果觉得不太习惯滚动方向,可以用下面的语句调整滚动方向.
+ <src type="elisp">
+(setq mouse-throw-with-scroll-bar nil)
+ </src>
+
+   下面的功能类似于 acrobat 中的手的功能,可以用鼠标移动来滚
+   动内容.
+
+ <src type="elisp">
+ (require 'mouse-drag)
+ (global-set-key (kbd "<S-down-mouse-1>") 'mouse-drag-drag)
+ </src>
+    同样，这里帮定了 Shift + 拖动鼠标左键。
+
+** 用鼠标快速 copy ,cut , paste
+
+ <src type="elisp">
+(require 'mouse-copy)
+(global-set-key [M-down-mouse-1] 'mouse-drag-secondary-pasting)
+(global-set-key [M-S-down-mouse-1] 'mouse-drag-secondary-moving)
+ </src>
+   
+   使用方法，把光标移动到要粘贴的地方，然后用按住 Alt + 拖
+   拉鼠标, 选择要拷贝的部分, 抬起鼠标,选择的部分就粘贴到了光
+   标所在位置. 也就是说,一个动作完成 copy & paste 的工作,而
+   且不改变 kill ring 的内容, 用 windows 的术语是剪切板. 和
+   上面的方法类似, 如果按住 Alt + Shift + 拖动鼠标,那么就会
+   完成 cut & paste 的功能.
+
+   前面介绍过用鼠标双击可以选择单词(根据字母的语法性质),可以
+   按照词语边界选择(双击+拖动), 可以选择多行 (三击+ 拖动),
+   这些选择方式在这里都是一样的工作. 
+
+   这个功能在编写程序的时候十分有用,我们经常需要移动一块代码,
+   而且移动到的位置也是很近的地方. 或者拷贝附近的一段代码.

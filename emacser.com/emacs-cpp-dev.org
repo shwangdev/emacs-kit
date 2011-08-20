@@ -1,0 +1,271 @@
+#+TITLE: 在Emacs下用C/C++编程
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+** 参考文献
+
+   按照惯例，我写的文章在最开始处放参考文献。
+    - hhuu @ newsmth 的《Emacs的日常生活》
+    - emacs 的文档
+    - emacs 相关插件的文档
+
+** 序
+
+   用emacs写程序也有5个年头了，深切地体会到Emacs的强大。程序员有三种，一种是用vi的，一种是用emacs的，还有一种是其他。或许有些夸张，但也颇能体现出emacs在程序员中的地位。
+#+HTML: <!--more-->
+
+   emacs最大的问题在于入门门槛较高。它看起来和多数人想象中的IDE相差甚远，很多人看到emacs的第一眼就觉得它是个记事本（还是个非常难用的记事本），稍微好些的往往觉得emacs也就是个ultraEditor而已，真是暴殄天物了。
+
+   我是个懒人，不喜欢记太多的快捷键，相信很多人和我一样。所以从我后面的叙述可以看出来，除了常用的命令都是快捷键外，其他命令多数都是用M-x执行或者用鼠标点菜单。这仅仅是个人风格问题，先说明一下。
+
+   我的基本编程环境是：
+
+   - Debian GNU/Linux sid 操作系统
+   - Gnome 2.10.0 桌面环境
+   - GUN Emacs 23.0.0.1 for debian
+   - 使用 Gnu tool chains(gcc,make,gdb等等)
+
+   后面的叙述都基于上述环境。另外，本文主要针对C/C++程序开发，对其他语言有些也适用，从难度上说，本文主要针对入门者。
+
+   本文肯定会有很多错误，[[mailto:caole82@gmail.com][请指正]]， 谢谢。 
+
+** 基本流程
+
+   写C++程序基本上是这么几个步骤：
+
+   1. 编辑代码
+   2. 编写Makefile
+   3. 编译代码，修改编译错误
+   4. 调试代码，修改逻辑错误
+
+   当然，往往还需要阅读别人的代码。
+
+   根据上述步骤，本文主要针对以下几个方面：
+
+   - 配置Emacs，建立便利的代码编辑环境和Makefile编写环境。
+   - 在Emacs中编译代码，并修改编译错误。
+   - 在Emacs中配合GDB调试程序。
+   - 利用cscope和ecb在emacs中阅读代码。 
+
+** 基本环境设置
+*** 编辑环境配置
+
+    要写C++程序，当然要用到cc-mode插件。CC-Mode原本是支持C语言的，但现在也能支持很多语言，比如 C++，Java，Objective-C，CORBA，AWK，Pike等等。CC-Mode是gnu-emacs的标准插件。如果您要求不高，那么默认的配置或许就能满足。CC-Mode的各种行为都可以自由地定制，您可以参考这里的文档：CC-Mode参考文档
+
+    这里是我的.emacs文件中关于CC-Mode配置的部分，仅供参考：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+;;;; CC-mode配置  http://cc-mode.sourceforge.net/
+(require 'cc-mode)
+(c-set-offset 'inline-open 0)
+(c-set-offset 'friend '-)
+(c-set-offset 'substatement-open 0)
+</pre>
+#+END_HTML
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+;;;;我的C/C++语言编辑策略
+
+(defun my-c-mode-common-hook()
+  (setq tab-width 4 indent-tabs-mode nil)
+  ;;; hungry-delete and auto-newline
+  (c-toggle-auto-hungry-state 1)
+  ;;按键定义
+  (define-key c-mode-base-map [(control \`)] 'hs-toggle-hiding)
+  (define-key c-mode-base-map [(return)] 'newline-and-indent)
+  (define-key c-mode-base-map [(f7)] 'compile)
+  (define-key c-mode-base-map [(meta \`)] 'c-indent-command)
+  ;;  (define-key c-mode-base-map [(tab)] 'hippie-expand)
+  (define-key c-mode-base-map [(tab)] 'my-indent-or-complete)
+  (define-key c-mode-base-map [(meta ?/)] 'semantic-ia-complete-symbol-menu)
+</pre>
+#+END_HTML
+
+    注意一下，上面最后两行是代码自动补齐的快捷键。后面我会提到代码自动补齐。
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+;;预处理设置
+(setq c-macro-shrink-window-flag t)
+(setq c-macro-preprocessor "cpp")
+(setq c-macro-cppflags " ")
+(setq c-macro-prompt-flag t)
+(setq hs-minor-mode t)
+(setq abbrev-mode t)
+)
+(add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
+
+;;;;我的C++语言编辑策略
+(defun my-c++-mode-hook()
+(setq tab-width 4 indent-tabs-mode nil)
+(c-set-style "stroustrup")
+;;	(define-key c++-mode-map [f3] 'replace-regexp)
+)
+</pre>
+#+END_HTML
+
+*** 自动补齐
+
+    自动补齐通常用的都是hippie-expand，我也用了很长时间。不过有时候会觉得这个自动补齐“傻”了一点，常会补齐出一些毫不相干的东西，因为hippie-expand是根据你敲过的词和kill-ring等进行判断的，并不对程序语法进行分析。
+
+    所以你还需要安装一个代码分析工具，然后把它加进hippie-expand的扩展策略里去。我们可以用semantic。实际上，hippie-expand＋semantic是我所发现的最好的选择了，如果您有更好的，请您也告诉我一声:)
+
+    Semantic是[[http://cedet.sourceforge.net/][CEDET]] 中的一个工具，CEDET是Collection of Emacs Development Environment Tools的缩写，它包含了好几个工具，都挺不错的。可惜我只会用其中两个。
+
+    您可以在.emacs中对Semantic进行配置，下面是我的.emacs相关的配置，仅供参考：
+
+    导入cedet：
+#+BEGIN_HTML
+<pre lang="lisp">
+(load-file "~/lib/emacs-lisp/cedet-1.0pre3/common/cedet.el")
+</pre>
+#+END_HTML
+    配置Semantic的检索范围:
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq semanticdb-project-roots 
+(list
+(expand-file-name "/")))
+</pre>
+#+END_HTML
+    自定义自动补齐命令，这部分是抄hhuu的，如果在单词中间就补齐，否则就是tab。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun my-indent-or-complete ()
+  (interactive)
+  (if (looking-at "\\>")
+      (hippie-expand nil)
+ 	(indent-for-tab-command))
+  )
+
+(global-set-key [(control tab)] 'my-indent-or-complete)
+</pre>
+#+END_HTML
+    hippie的自动补齐策略，优先调用了senator的分析结果：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(autoload 'senator-try-expand-semantic "senator")
+
+(setq hippie-expand-try-functions-list
+      '(
+        senator-try-expand-semantic
+        try-expand-dabbrev
+        try-expand-dabbrev-visible
+        try-expand-dabbrev-all-buffers
+        try-expand-dabbrev-from-kill
+        try-expand-list
+        try-expand-list-all-buffers
+        try-expand-line
+        try-expand-line-all-buffers
+        try-complete-file-name-partially
+        try-complete-file-name
+        try-expand-whole-kill
+        )
+      )
+</pre>
+#+END_HTML
+    注意一下我前面CC-Mode配置中有这么两行：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(define-key c-mode-base-map [(tab)] 'my-indent-or-complete)
+(define-key c-mode-base-map [(meta ?/)] 'semantic-ia-complete-symbol-menu)
+</pre>
+#+END_HTML
+    这样，我们在CC-Mode中就可以调用自定义的hippie补全了，快捷键是Tab。
+
+    另外，我还把快捷键“Alt + / ”绑定到了semantic-ia-complete-symbol-menu命令上，这是semantic的命令，它会根据分析结果弹出补齐的菜单，效果如图显示： 
+
+    #+BEGIN_HTML
+    [caption width="150" caption="自动补齐效果图"]<a href="screenshots/semantic-ia.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_semantic-ia.jpg" height="150"/></a>[/caption]
+    #+END_HTML
+    
+    CEDET中还有一个不错的工具是speedbar，你可以用它在多个文件中快速切换。在我的.emacs配置文件里，我把speedbar关联到了F5上：
+#+BEGIN_HTML
+<pre lang="lisp">
+(global-set-key [(f5)] 'speedbar)
+</pre>
+#+END_HTML
+
+    这样用F5就可以调出speedbar，效果如下：
+
+    #+BEGIN_HTML
+    [caption width="150" caption="speedbar"]<a href="screenshots/speedbar.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_speedbar.jpg" height="150"/></a>[/caption]
+    #+END_HTML
+    
+    不过说实话，我自己很少用到speedbar，我通常都是用dired配合bookmark使用:) 
+
+** 编译和调试程序
+
+   按上面的配置，写完程序和Makefile文件后，在Emacs源代码窗口中按F7就可以进行编译。因为在my-c-mode-common-hook()函数里，有这么一行：
+#+BEGIN_HTML
+<pre lang="lisp">
+(define-key c-mode-base-map [(f7)] 'compile)
+</pre>
+#+END_HTML
+   默认情况下，emacs的compile命令是调用make -k，我把它改成了make。你也可以把它改成其他的，比如gcc之类的。改下面的“make”就行了。
+#+BEGIN_HTML
+<pre lang="lisp">
+'(compile-command "make")
+</pre>
+#+END_HTML
+
+   Emacs会划分一个窗格显示编译的消息，在编译结束后，emacs会自动将编译器的输出和程序关联起来，告诉你第几行的程序有问题。直接在出错的行号上按Enter，就可以跳转到相应文件的相应行。其实我通常都是用鼠标中键去点出错行号:)
+
+   搞定了编译错误后，接着要和逻辑错误斗争了。其实对简单的程序来说，把中间结果打印到终端是最简单好用的调试办法:)不过稍微复杂点的程序就会晕菜了，这时我们就需要拿gdb跟踪程序流程了。
+
+   你用下面的命令就可以启动gdb了。
+   : M-x gdb
+   通常我喜欢进入gdb-many-windows模式，这样就会把一个Frame划分为5个窗格，同时显示：gdb命令窗口，当前局部变量，程序文本，调用栈和断点。
+
+   gdb的命令就不在这里说了，它的文档几乎到处都是。emacs把gdb的命令和快捷键做了绑定，对于常用的命令，还是输入快捷键比较方便。比如，C-c C-n是Next line，C-c C-s是step in，其实用的最多的快捷键也就是这两个。
+
+   下面是我的gdb效果图：
+
+    #+BEGIN_HTML
+    [caption width="150" caption="GDB"]<a href="screenshots/gdb.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_gdb.jpg" height="150"/></a>[/caption]
+    #+END_HTML
+
+** 阅读代码
+
+   在emacs下读代码通常有三种工具，最简单的是etags，最复杂的是ecb（emacs code browser），位于中间的是cscope。
+
+   etags和ctags一样，只不过前者是用于emacs的，后者是用于vi的。我个人觉得etags功能稍稍显得不够用一点，当然，也可能是我用的不好:) 欢迎大牛指导。
+
+   使用tags之前要先对源代码分析建立tags文件，在代码所在目录中运行：etags -R 即可。
+
+   我常用的就这几个命令和快捷键：
+#+BEGIN_EXAMPLE
+   M-x visit-tags-table <RET> FILE <RET>   选择tags文件
+   M-. [TAG] <RET>                         访问标签
+   M-*                                     返回
+   C-u M-.                                 寻找标签的下一个定义
+#+END_EXAMPLE
+   ecb据说功能强大，但是太复杂了，我懒得折腾它。谁搞定了教教我吧:) 下面是一张ecb的效果图。
+
+   cscope是我感觉比较合适的一个工具。它其实是一个独立的软件，完全可以脱离vi和emacs使用。但是结合emacs的强大功能，cscope就显得更加方便了。GNU Emacs默认自带cscope的支持。在使用之前，cscope也需要对代码进行索引。在emacs中可以这样做：
+#+BEGIN_EXAMPLE
+   C-c s a             设定初始化的目录，一般是你代码的根目录
+   C-s s I             对目录中的相关文件建立列表并进行索引
+#+END_EXAMPLE
+   建完索引之后，你就可以用cscope在代码里游荡了。常用的一些命令如下：
+#+BEGIN_EXAMPLE
+   C-c s s             序找符号
+   C-c s g             寻找全局的定义
+   C-c s c             看看指定函数被哪些函数所调用
+   C-c s C             看看指定函数调用了哪些函数
+   C-c s e             寻找正则表达式
+   C-c s f             寻找文件
+   C-c s i             看看指定的文件被哪些文件include
+#+END_EXAMPLE
+   上面这些快捷键其实我自己也常常记不全，没关系，抬头看看上面的菜单栏，有一栏就是Cscope，这些命令里头都有:)
+
+   贴一个cscope的效果图吧:
+
+    #+BEGIN_HTML
+    [caption width="150" caption="cscope"]<a href="screenshots/cscope.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_cscope.jpg" height="150"/></a>[/caption]
+    #+END_HTML
+
+   写完了。希望这篇文章对您能有一些用处。有问题或建议可以和[[mailto:caole82@gmail.com][我]] 联系。 

@@ -1,0 +1,69 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-04-10 22:29:36 Saturday by ahei> -->
+
+<!-- Emacs才是世界上最强大的IDE － cedet的安装 -->
+
+<img class="alignright" title="CEDET" src="screenshots/cedet/cedet-logo.png" width="200" height="90"/>
+
+在准备写<a href="emacs-ide.htm" target="_blank">Emacs才是世界上最强大的IDE</a>系列文章时，由于以前用的是cedet1.0pre6版本，速度比较慢，而且精确度也不高，所以就没有打算写它，昨天晚上在水木群里听一位网友介绍说cedet的cvs版本速度很快，而且精确度不错，所以晚上就down下cvs的版本试了一把，越试越感觉不错，就有了写cedet的想法。从头开始，先说安装吧。<!--more-->
+
+cedet的安装挺简单，只要仔细看好cedet的说明就可以了，不过我昨天晚上没仔细看好说明，安装的时候碰到一个问题，所以我还是准备写一下安装过程。(如果你用apt-get, 或者emerge安装，首先要看下它们的版本，1.0pre6和其之前的版本都不要安装，语法分析会很慢的。)
+
+首先下载cedet的cvs版本：
+<pre lang="bash" line="1">
+cvs -d:pserver:anonymous@cedet.cvs.sourceforge.net:/cvsroot/cedet login
+cvs -z3 -d:pserver:anonymous@cedet.cvs.sourceforge.net:/cvsroot/cedet co -P cedet
+</pre>
+然后编译：
+<ul>
+  <li>
+linux下:
+<pre lang="bash" line="1">
+cd cedet
+touch `find . -name Makefile` (非cvs版本不需要这个)
+a) make
+或
+b) make EMACS=<your favorite emacs>
+或
+c) make MAKEINFO=/usr/local/bin/makeinfo
+或
+d) make MAKEINFO=echo
+如果编译过程中发生类似找不到loaddef文件，custom-autoload以及其他奇怪的错误，执行：
+a) make clean-autoloads
+b) make clean-all
+然后再重新编译。编译错误还有可能是make版本引起的，请使用GNU make，或者使用windows下的安装方法。
+</pre>
+</li>
+  <li>
+windows下(当然linux下这样也可以)：
+<pre lang="bash" line="1">
+emacs -q --no-site-file -l cedet-build.el -f cedet-build
+或
+在emacs中打开cedet-build.el文件，然后
+M-x eval-buffer
+M-x cedet-build-in-default-emacs
+编译过程中如果发生超过emacs堆栈大小的错误，退出emacs再重新编译即可。
+</pre>
+</li>
+  </ul>
+
+说完安装，再说一下简单的使用，把下面的代码贴到你的.emacs里面：
+<pre lang="lisp" line="1">
+(add-to-list 'load-path "path-of-cedet/common")
+(require 'cedet)
+(require 'semantic-ia)
+
+;; Enable EDE (Project Management) features
+(global-ede-mode 1)
+
+(semantic-load-enable-excessive-code-helpers)
+(semantic-load-enable-semantic-debugging-helpers)
+
+;; Enable SRecode (Template management) minor-mode.
+(global-srecode-minor-mode 1)
+</pre>
+
+现在开始享受cedet吧。
+
+关于cedet的进一步使用，我会再写专门的文章介绍，敬请期待，:)。

@@ -1,0 +1,50 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-30 09:49:30 Friday by ahei" -->
+
+<!-- Emacs中快速访问远程主机的文件 -->
+
+<!-- 小技巧, 初级 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#bood" target="_blank"><span style="color: #0000ff;"><b>bood</b></span></a>
+
+工作中因为要经常用dired访问远程主机上的文件，每次都要输入一大堆的主机名和路径，比如为了访问远程机器home目录下的一个文件，我需要输入： <!--more-->
+<pre>
+/bood@remote.host.com:~/working/filename.pl
+</pre>
+每次输入一遍主机名不仅难记，而且效率十分低下。
+
+后来发现了一段<a href="http://fgeorges.blogspot.com/2008/01/emacs-favourite-directories.html" target="_blank">lisp程序</a>，可以在Emacs中给那些常用的路径起别名，比如可以将
+<pre>
+/bood@remote.host.com:~
+</pre>
+命名为home，那么以后就可以直接用
+<pre>
+@home/working/filename.pl
+</pre>
+来访问上面的那个文件了。
+
+最近我把这段程序整理成了一个单独的扩展，并做了一些改进（主要是让别名列表成为custom variable），就拿出来跟大家分享一下（<a href="http://docs.google.com/leaf?id=0B1_ZnhezSzcWYWRhYzBlYTUtODQ4NS00ZjVlLTgyMjUtNDYzYjA5YTQ4MGNk&amp;hl=en" target="_blank">这里下载</a>）。
+扩展使用起来很简单，下载以后放到Emacs的site-lisp目录下，然后修改你的.emacs，加入：
+<pre>
+(require 'drkm-fav)
+</pre>
+
+随后用setq命令便可以给路径定制自己的别名了，比如：
+<pre lang="lisp" line="1">
+(setq drkm-fav:favourite-directories-alist
+  '(("home"  . "/bood@remote.host.com:~")
+    ("kernow-src" . "~/xslt/kernow/svn-2007-09-29/kernow/trunk/src/net/sf/kernow")))
+</pre>
+这样就建立了home和kernow-src两个别名。
+
+要是嫌编辑.emacs麻烦的话，也可以通过Emacs的Custom Variable机制来设置和保存drkm-fav:favourite-directories-alist（M-x customize-option），不过要注意的是设置的时候每个字符串都需要加上双引号。
+
+最后附上我的一部分设置，大家可以参考其中的一些技巧，比如如何重用主机名：
+<pre lang="lisp" line="1">
+(setq drkm-userhost "bood@remote.host.com")
+(setq drkm-root (concat "/" (concat drkm-userhost ":")))
+(setq drkm-fav:favourite-directories-alist
+  (list (cons "home"  (concat drkm-root "~"))
+        (cons "root"  drkm-root)))
+</pre>

@@ -1,0 +1,79 @@
+# -*- org -*-
+
+# Time-stamp: <2010-05-16 11:22:00 Sunday by ahei>
+
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+# DEA, 初级
+
+DEA的FAQs
+
+使用DEA的过程中遇到不少问题吧？请看下面的FAQ列表，如果你的问题不在此列表内的话，可以自己用[[http://emacser.com/to-emacs-beginner.htm][二分调试法]]查下原因或者直接联系[[http://emacser.com/about.htm#ahei][ahei]]。
+#+HTML: <!--more-->
+
+** 使用DEA后启动Emacs后出现错误 =error: Font `fontset-courier' is not defined=
+   打开你下载后的DEA里面的.emacs文件，搜索到如下语句：
+#+BEGIN_HTML
+<pre lang="lisp">
+(require 'font-settings)
+</pre>
+#+END_HTML
+   然后把这段语句注释掉，然后执行./install.emacs.sh，重启Emacs就可以了。
+
+** @<span style="color: red;"> *奇怪的问题* @</span>
+#+BEGIN_HTML
+<span style="color: red;"><b>关于select-buffer</b></span>
+DEA里面包含一个select-buffer插件，这个插件可以方便的切换buffer，但是有一些小bug，如果你在使用DEA的过程中发现了什么奇怪的问题，可以关掉它试试(C-x t或者 M-x sb-toggle-keep-buffer)，在select-buffer激活的情况下，有些不能运行的命令def-command-sb重新定义了下变成以sb结尾的命令，比如select-buffer激活后，query-replace命令不能正常使用，我用def-command-sb重新定义了个query-replace-sb命令，而且把它绑定到了M-r和M-%上，使用仍然不受影响。如果你发现了某些在select-buffer激活的情况下不能使用的非你自己定义的命令，可以告诉我，我加到select-buffer里面。
+#+END_HTML
+
+** 修改了DEA的.emacs文件没有生效
+   修改.emacs后，需要重启(C-x C-c)Emacs使得修改生效，或者执行一下M-x install-.emacs，把Emacs进程杀掉修改是没有生效的，关于这点请看[[http://emacser.com/dea.htm#sec-2][DEA的安装]]。
+
+** 打开文件后不能正常编辑
+   DEA打开文件后会进入emaci-mode，请看[[http://emacser.com/emaci.htm][Emacs才是世界上最强大的IDE － 用Emaci阅读文件]]
+   
+** 关于"WARNING from msf-abbrev.el"
+   启动时出现如下warning：
+#+BEGIN_HTML
+<pre lang="text">
+WARNING from msf-abbrev.el:  no abbrev table LaTeX-mode-abbrev-table and no hook LaTeX-mode-hook, abbrevs for mode LaTeX-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table TeX-mode-abbrev-table and no hook TeX-mode-hook, abbrevs for mode TeX-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table conf-javaprop-mode-abbrev-table and no hook conf-javaprop-mode-hook, abbrevs for mode conf-javaprop-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table cperl-mode-abbrev-table and no hook cperl-mode-hook, abbrevs for mode cperl-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table fortran-mode-abbrev-table and no hook fortran-mode-hook, abbrevs for mode fortran-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table inferior-python-mode-abbrev-table and no hook inferior-python-mode-hook, abbrevs for mode inferior-python-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table jde-mode-abbrev-table and no hook jde-mode-hook, abbrevs for mode jde-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table message-mode-abbrev-table and no hook message-mode-hook, abbrevs for mode message-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table perl-mode-abbrev-table and no hook perl-mode-hook, abbrevs for mode perl-mode will not be loaded
+WARNING from msf-abbrev.el:  no abbrev table shell-mode-abbrev-table and no hook shell-mode-hook, abbrevs for mode shell-mode will not be loaded
+</pre>
+#+END_HTML
+   不用管这些warning，没关系的, 不过如果你有洁癖的话, 可以到all-auto-complete-settings.el里面, 把(require ‘msf-abbrev-settings)注释掉就可以了
+
+** 不喜欢高亮行的下划线
+   DEA中开启了hl-line-mode高亮当前行，而且用下划线标示出来，比较显眼，就像下面这样：
+
+#+BEGIN_HTML
+[caption width="150" caption="在Emacs中显示长条状光标"]<a href="screenshots/cursor-change-bar.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_cursor-change-bar.png"/></a>[/caption]
+#+END_HTML
+
+   如果你不喜欢，可以在(require 'face-settings)后， 执行：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq hl-line-face 'hl-line-nonunderline-face)
+(setq hl-line-overlay nil)
+(color-theme-adjust-hl-line-face)
+</pre>
+#+END_HTML
+
+** 颜色设置在哪
+   在face-settings.el里面, 里面有各个Elisp包的颜色设置
+
+** 关于开发方面的设置在哪
+   在dev-settings.el里面, 里面有关于各语言的设置
+
+** 类C语言的设置在哪
+   在c-settings.el里面
+   
+** 字体设置在哪
+   在font-settings.el里面

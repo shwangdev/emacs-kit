@@ -1,0 +1,70 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-06 13:05:57 Saturday by ahei" -->
+
+<!-- Emacs的process sentinel -->
+
+今天早上去水木Emacs版看到一个网友发了一个帖子，实现编译成功后自动关闭*compilation* buffer的功能，主要是利用compilation-finish-functions这个变量，这个变量的作用就是当编译完成后执行这个变量对应的函数，它的实现如下：<!--more-->
+<pre lang="lisp" line="1">
+(setq compilation-finish-functions
+      (lambda (buf str)
+        (when (and (string= (buffer-name buf) "*compilation*")
+                   (not (string-match "exited abnormally" str)))
+          (run-at-time 0.5 nil 'delete-windows-on buf)
+          )))
+</pre>
+
+他的帖子中还提到了compilation-mode中两个比较有意思的变量，compilation-auto-jump-to-first-error当编译失败的时候，自动跳到第一个错误的地方，比较不错。还有一个是compilation-scroll-output，就是编译的时候自动向下滚动编译输出的结果，这个选项比较有用，因为默认的只能看到最上面的编译结果，下面的结果必须先切换到*compilation* buffer，然后把鼠标移到buffer尾，我以前一直希望有这个功能，自己用end-of-buffer-other-window函数实现了这个功能。
+
+在term-mode中退出term的时候，不会自动关闭term的buffer，multi-term增加了自动关闭buffer的功能，我看了一下multi-term中这个功能的实现，是利用set-process-sentinel这个方法，这个方法为进程设置一个process sentinel，当进程的状态发生改变的时候sentinel会调用设定好的函数。set-process-sentinel的定义如下：
+<pre lang="lisp" line="1">
+set-process-sentinel is a built-in function in `process.c'.
+
+(set-process-sentinel process sentinel)
+
+Give process the sentinel sentinel; nil for none.
+The sentinel is called as a function when the process changes state.
+It gets two arguments: the process, and a string describing the change.
+</pre>
+第一个参数是进程，第二个参数是函数，这个函数应该有两个参数，第一个参数是进程，第二个参数是进程的描述串。
+
+由于Emacs中退出gdb的时候，不能自动关闭gdb对应的buffer，所以我也用这个set-process-sentinel实现了自动关闭gdb buffer的功能，代码如下：
+<pre lang="lisp" line="1">
+(defun kill-buffer-when-shell-command-exit ()
+  "Close current buffer when `shell-command' exit."
+  (let ((process (ignore-errors (get-buffer-process (current-buffer)))))
+    (when process
+      (set-process-sentinel process
+                            (lambda (proc change)
+                              (when (string-match "\\(finished\\|exited\\)" change)
+                                (kill-buffer (process-buffer proc))))))))
+
+;; 退出gdb的时候关闭gdb对应的buffer
+(add-hook 'gdb-mode-hook 'kill-buffer-when-shell-command-exit)
+;; 退出term的时候关闭term对应的buffer
+(add-hook 'term-mode-hook 'kill-buffer-when-shell-command-exit)
+</pre>
+
+那么怎样用set-process-sentinel实现编译成功的时候自动关闭*compilation* buffer呢？这样：
+<pre lang="lisp" line="1">
+(defun kill-buffer-when-compile-success (process)
+  "Close current buffer when `shell-command' exit."
+  (set-process-sentinel process
+                        (lambda (proc change)
+                          (when (string-match "finished" change)
+                            (delete-windows-on (process-buffer proc))))))
+
+;; 编译成功后自动关闭*compilation* buffer
+(add-hook 'compilation-start-hook 'kill-buffer-when-compile-success)
+</pre>
+上面这个方法是在compilation-start-hook中增加一个函数来实现的，compilation-start-hook是编译进程开始后调用的，这个hook里面的函数有一个参数process。
+
+那为什么不能像gdb-mode-hook那样，直接把kill-buffer-when-compile-success增加到compilation-mode-hook里面呢？我一开始也是增加到这个hook里面的，但是试了下不行，后来调试了下才知道原来调用compilation-mode-hook的时候，还没有创建编译进程，也就不可能设置进程的sentinel。
+
+那下面我们再来看看通过compilation-finish-functions来实现自动关闭buffer和通过process sentinel来实现有什么不同。
+
+通过看compile.el代码，了解到compilation-finish-functions是在函数compilation-handle-exit里面调用的，而compilation-handle-exit又是在compilation-sentinel又是在compilation-start中这样调用的：
+<pre lang="lisp">
+(set-process-sentinel proc 'compilation-sentinel)
+</pre>
+看来compilation-finish-functions最终还是通过process sentinel来实现的，殊途同归阿!

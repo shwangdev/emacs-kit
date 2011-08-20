@@ -1,0 +1,45 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-18 14:24:42 Thursday by ahei" -->
+
+<!-- 用性感的尾巴highlight-tail标记最近的修改 -->
+
+<img class="alignright" title="highlight-tail" src="screenshots/highlight-tail/highlight-tail.gif"/>
+
+昨天写了文章<a href="pulse.htm" target="_blank">《用pulse实现Emacs的淡入淡出效果》</a>后，<a href="http://wdicc.com/" target="_blank">wd</a>给我留言让我试试<a href="http://blog.arithm.com/2008/04/12/highlight-tail-for-emacs/" target="_blank">highlight-tail</a>，我google了一下，原来wd和<a href="http://twitter.com/sssslang" target="_blank">sssslang</a>，<a href="xwl.appspot.com" target="_blank">xwl</a><a href="http://wdicc.com/party-with-sssslang-and-xwl/" target="_blank">聚会</a>的时候，wd从xwl那看到的highlight-tail。看来有牛人在用，肯定挺有意思的，遂去它的主页down下来，试了一把，果然效果不同凡响，遂拿来跟大家一起分享。<!--more-->
+
+cedet有个功能，就是它会标记出你buffer中最近的修改，一看就能知道哪修改了，挺实用的，效果如下：
+[caption width="150" caption="cedet标记的修改的部分"]<a href="screenshots/cedet/cedet-mark-modify.png" rel="lightbox"><img title="cedet标记的修改的部分" src="screenshots/cedet/thumbs/thumbs_cedet-mark-modify.png" alt="cedet标记的修改的部分" width="150" height="150" /></a>[/caption]
+上图中的朦朦胧胧的灰色区域就是cedet标记的修改的部分。
+
+highlight-tail也是干这个的，它会用渐变颜色标记出你最近的修改，不过更漂亮了。highlight-tail的作者<a href="mailto:necui-emahte@nic-nac-project.net">Rafal Jedruszek</a>很幽默的说：
+<pre>
+So from now on, your Emacs will be even more sexy! ;o )
+</pre>
+确实，用上highlight-tail你的emacs会更性感，吸引小MM必备， :)
+
+现在你是不是非常想看看highlight-tail到底长啥样子，看下面的截图：
+[caption width="150" caption="性感的尾巴highlight-tail"]<a href="screenshots/highlight-tail/highlight-tail.png" rel="lightbox"><img title="性感的尾巴highlight-tail" src="screenshots/highlight-tail/thumbs/thumbs_highlight-tail.png" alt="性感的尾巴highlight-tail" width="150" height="150" /></a>[/caption]
+作者还录了一段<a href="http://nic-nac-project.net/~necui/img/htshow.gif" target="_blank">视频</a>，可惜链接失效了，不急，所以我自己也录制了一段，<a href="highlight-tail-video.htm" target="_blank"><span style="color: #0000ff;">这里</span></a>观看视频。
+
+看完上面的视频觉得怎么样？果然很sexy吧！ :)
+
+highlight-tail使用很简单，require后，打开highlight-tail-mode，就可以使用了，当你对buffer内容修改之后，修改的内容就会以渐变的颜色标记出来。它的配置选项主要是：highlight-tail-colors控制渐变颜色(重新设置了这个变量后想要生效的话需要重启一下highlight-tail-mode，方法是执行两次M-x highlight-tail-mode)。作者默认设置的highlight-tail-colors比较适合白底黑字的界面，他还在highlight-tail-colors的文档里提供了另外一个比较好看的适合白底黑字的颜色：
+<pre lang="lisp" line="1">
+(setq highlight-tail-colors
+        '(("#c1e156" . 0)
+          ("#b8ff07" . 25)
+          ("#00c377" . 60)))
+</pre>
+其效果图如下：
+[caption width="150" caption="性感的尾巴highlight-tail"]<a href="screenshots/highlight-tail/highlight-tail-white-black.png" rel="lightbox"><img title="性感的尾巴highlight-tail" src="screenshots/highlight-tail/thumbs/thumbs_highlight-tail-white-black.png" alt="性感的尾巴highlight-tail" width="150" height="150" /></a>[/caption]
+如果你像我一样比较喜欢黑底白字的话，可以试试作者在黑底白字下的颜色设置：
+<pre lang="lisp" line="1">
+(setq highlight-tail-colors
+          '(("black" . 0)
+            ("#bc2525" . 25)
+            ("black" . 66)))
+</pre>
+其效果图如下：
+[caption width="150" caption="性感的尾巴highlight-tail"]<a href="screenshots/highlight-tail/highlight-tail-black-white.png" rel="lightbox"><img title="性感的尾巴highlight-tail" src="screenshots/highlight-tail/thumbs/thumbs_highlight-tail-black-white.png" alt="性感的尾巴highlight-tail" width="150" height="150" /></a>[/caption]
+highlight-tail-posterior-type控制渐变的方式，如果该值为t，就渐变所有的修改，如果为'const则渐变固定长度的修改，而这个长度则是由highlight-tail-const-width来控制的。至于它的速度，也还不错，不会耗你的cpu，据作者测试，你一直按着某个字母的话，也就占15%左右，如果你还嫌它占cpu的话，你可以把highlight-tail-steps调小，把highlight-tail-timer调大，这样占的cpu就会更少了。

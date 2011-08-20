@@ -1,0 +1,146 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-21 15:21:07 Sunday by ahei" -->
+
+<!-- Emacs初学者必知必会 -->
+
+自己学习Emacs已3年由余, 对Emacs也算有点经验. 随着对Emacs的了解的不断深入, 越来越觉得Emacs是一款非常值得学习的软件. 所以我经常向自己的朋友推荐Emacs. 自己也认识一些Emacs初学者. 从他们经常问的一些问题中感觉, 好多初学者都没有好好的学过Emacs, 也有可能是Emacs的资料不是很多, 好资料更少, 他们没有找到好的学习方法吧. 所以, 我想就我所了解的, 写一些初学者应该知道的东西, 或者说, 初学者掌握了这些知识和方法后, 学习Emacs起来更加容易吧. 另外, 初学者如果有兴趣的话, 可以看看本人另外一篇拙作<a href="to-emacs-beginner.htm" target="_blank">《致Emacs初学者》</a>, 希望能对你们有所帮助.<!--more-->
+
+<h3>知道Emacs的基本概念</h3>
+<ul>
+  <li><span style="color: #0000ff;">buffer</span>
+    缓冲区. Emacs并不直接对文件进行操作, 它是把文件加载进buffer, 用户直接操作buffer, 只有当用户确定把buffer中所做的修改写人文件时, Emacs才把buffer中的内容写入文件. buffer实际上就是一个内存缓冲区, 这和一般编辑器中都一样, 应该很好理解.
+  </li>
+
+  <li><span style="color: #0000ff;">window</span>
+    窗口. 由于Emacs很早就诞生了, 它的窗口概念和现在基于窗口的操作系统中的窗口概念不是一样的. Emacs中的窗口是用来显示buffer的一个区域. 它并不像操作系统中的窗口拥有自己的标题栏,系统菜单栏.
+    </li>
+
+  <li><span style="color: #0000ff;">frame</span>
+    Emacs中的frame就是操作系统中的窗口.
+  </li>
+</ul>
+buffer是文件的内存表示, windows则是显示buffer的区域, 一个frame中可以有多个window, Emacs则可以有多个frame. 
+
+<ul>
+  <li><span style="color: #0000ff;">Emacs Lisp</span>
+    Emacs最基础的部分是用c写的，其他部分都是用Emacs Lisp语言写的，Emacs Lisp语言是基于lisp语言的. lisp是LISt Processor的缩写, 即链表处理语言, 所以lisp语言的操作都是基于链表的, 它的语法也是链表结构, 链表第一个元素表示函数名, 其他元素是参数, 比如通常语言中的a+b, 在lisp就是(+ a b)
+  </li>
+
+  <li><span style="color: #0000ff;">mode</span>
+    mode有major mode和minor mode之分, 每个缓冲区对应一个major mode, 也只有一个major mode, 但是可以有多个minor mode. Emacs对每一种文件都有一个mode.
+  </li>
+
+  <li><span style="color: #0000ff;">命令</span>
+    你对Emacs所有的操作都是对Emacs的命令的调用。比如，你在text-mode里，当你按下任何字母键进行编辑的时候，实际上是调用的emacs的命令self-insert-command.
+  </li>
+
+  <li><span style="color: #0000ff;">快捷键</span>
+    Emacs中Control键用C表示,Alt键用M表示, 即: C-c表示Control C, M-x表示Alt x.
+    除掉以Alt键开头的，比如Alt a，Emacs中的快捷键基本上都有一个前缀，Emacs中最多的快捷键前缀就是C-x，C-c，前缀表示，你不必要一起按下前缀和后缀，可以先按下前缀，Emacs会等待你按下剩余的快捷键，这样Emacs中的快捷键按起来非常的方便。
+  </li>
+  
+  <li><span style="color: #0000ff;">keymap</span>
+    键盘映射. Emacs的快捷键是通过keymap来控制的. 有全局和局部的keymap. 每个mode都会有一个自己的局部的keymap, 局部的keymap会覆盖全局的keymap, 另外如果对应的major mode有开启的minor mode, 而且这个minor mode有keymap的话, 这个minor mode的keymap会覆盖major mode的keymap.
+  </li>
+</ul>
+
+<h3>学会看文档</h3>
+Emacs的文档非常丰富, 有Elisp自己的自文档, 还有更详细的info. Elisp中的变量, 函数都有文档. 对于大多数情况都够用了.
+<ul>
+  <li><span style="color: #0000ff;">查看变量的值和文档</span>
+    C-h v (describe-variable)
+  </li>
+
+  <li><span style="color: #0000ff;">查看函数的文档</span>
+    C-h f (describe-function)
+  </li>
+
+  <li><span style="color: #0000ff;">查看face的文档</span>
+    M-x describe-face
+  </li>
+
+  <li><span style="color: #0000ff;">查看某个mode的文档</span>
+    C-h m (describe-mode)
+    刚开始学习某个mode的时候, 可以用C-h m看看当前buffer对应的主mode和副mode的文档, 这个文档一般都会包括mode中的命令和快捷键列表. 
+  </li>
+
+  <li><span style="color: #0000ff;">查看某个快捷键对应的命令</span>
+    C-h k (describe-key)
+  </li>
+
+  <li><span style="color: #0000ff;">查看某个命令对应的快捷键</span>
+    C-h w (where-is)
+  </li>
+
+  <li><span style="color: #0000ff;">查看当前buffer所有的快捷键列表</span>
+    C-h b (describe-bindings)
+  </li>
+
+  <li><span style="color: #0000ff;">查看当前buffer中以某个快捷键序列开头的快捷键列表</span>
+    <待查看的快捷键序列> C-h，比如你想查看当前buffer中所有以C-c开头的快捷键列表，按C-c C-h就可以了。
+  </li>
+
+  <li><span style="color: #0000ff;">查看函数的代码</span>
+    find-function
+  </li>
+
+  <li><span style="color: #0000ff;">查看变量的代码</span>
+    find-variable
+  </li>
+
+  <li><span style="color: #0000ff;">查看face的代码</span>
+    find-face-definition
+  </li>
+
+  <li><span style="color: #0000ff;">M-x apropos</span>
+    查看包含某个关键词的函数,变量,face
+  </li>
+</ul>
+
+<h3>会些简单的配置</h3>
+<ul>
+  <li><span style="color: #0000ff;">执行Elisp代码</span>
+    <ol>
+      <li>在某条语句后面按C-x C-e (eval-last-sexp)可以执行那条语句</li>
+      <li>M-x eval-buffer 可以执行当前buffer内的Elisp代码</li>
+      <li>选中一个region后, M-x eval-region可以执行这个region内的代码</li>
+    </ol>
+  </li>
+  
+  <li><span style="color: #0000ff;">安装插件</span>
+    Emacs的插件一般都是一个以el为后缀名的文件, 把这个文件下载下来后放到一个目录, 比如~/emacs/lisps, 然后执行下面这两条语句:
+    <pre lang="lisp" line="1">
+(add-to-list 'load-path "~/emacs/lisps")
+(require 'pluginname)
+    </pre>
+  </li>
+  
+  <li><span style="color: #0000ff;">快捷键定制</span>
+    全局绑定global-set-key, 绑定某个mode的快捷键用define-key. global-set-key的定义为:
+    <pre lang="lisp">
+(global-set-key key command)
+    </pre>
+    比如想把C-j绑定到"到达指定行上"(goto-line), 这样就可以了:
+    <pre lang="lisp">
+(global-set-key (kbd "C-j") 'goto-line)
+    </pre>
+    kbd是Emacs的宏, 把快捷键转换为Emacs的内部按键表示. 然后执行上面那条语句, 就会使你的配置生效. 然后你可以用C-h k检查一下你的定制是否成功了.
+    如果对于比较复杂的快捷键, 比如Control x F3, 改怎么写呢? 按C-h k(describe-key), 然后再按下Control x F3, Emacs会出现一个"C-x <f3>", 这个就是你要写到kbd宏里面的内容. 
+      如果你想对某个特定模式比如c++-mode进行快捷键定制, 用define-key即可, 对于上面的例子这样写:
+      <pre lang="lisp">
+(define-key c++-mode-map (kbd "C-j") 'goto-line)
+      </pre>
+      define-key第一个参数map一般为mode后面直接加"-map"
+  </li>
+
+  <li><span style="color: #0000ff;">简单的颜色定制</span>
+    <pre lang="lisp" line="1">
+(set-background-color "black") ;; 使用黑色背景
+(set-foreground-color "white") ;; 使用白色前景
+
+(set-face-foreground 'region "red")  ;; 区域前景颜色设为红色
+(set-face-background 'region "blue") ;; 区域背景色设为蓝色
+    </pre>
+  </li>
+</ul>  

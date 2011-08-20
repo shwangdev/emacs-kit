@@ -1,0 +1,371 @@
+#+TITLE: emacs中绘图 -- ditaa篇
+#+AUTHOR: fangzhzh
+#Time-stamp: <2010-08-22 16:54:04 Sunday by taoshanwen>
+#+LANGUAGE: zh_CN
+#+TAGS: org-mode, muse-mode, wiki-mode, ditaa, emacs, graphviz, python, matlab
+#+MACRO: Latex  [[http://www.latex-project.org/][Latex]]
+#+MACRO: Muse-mode [[http://mwolson.org/projects/EmacsMuse.html][Muse-mode]]
+#+MACRO: org-mode [[http://orgmode.org/][org-mode]]
+#+MACRO: wiki-mode [[http://mwolson.org/projects/EmacsWikiMode.html][wiki-mode]]
+#+MACRO: photoshop [[http://www.photoshop.com][Photoshop]]
+#+MACRO: ditaa [[http://ditaa.sourceforge.net/][ditaa]]
+#+MACRO: MicrosoftVisio [[http://office.microsoft.com/en-us/visio/][Microsoft Visio]]
+#+MACRO: artist-mode [[http://www.lysator.liu.se/~tab/artist/][artist-mode]]
+#+MACRO: picture-mode [[http://www.emacswiki.org/emacs/PictureMode][picture-mode]]
+#+MACRO: graphviz  [[http://users.skynet.be/ppareit/projects/graphviz-dot-mode/graphviz-dot-mode.html][graphviz]]
+#+OPTIONS: ^:nil author:nil timestamp:nil creator:nil
+: Fast,Cheap,Good: Choose any two.
+:                                   --anonymous.
+
+#+BEGIN_HTML
+<img class="alignright" title="ditaa" src="screenshots/ditaa-logo.png"/>
+#+END_HTML
+
+** emacs中的图
+emacs用途多多，编辑代码、文档、演示文稿，记日志等等。在这些应用中有一个共同点，也是广大emacser很可能需要的一点功能，画图，对于大多数使用emacs的都是死宅死宅技术男，主要的用途还就是流程图，框图之流。
+
+#+HTML: <!--more-->
+
+[[http://en.wikipedia.org/wiki/A_picture_is_worth_a_thousand_words][一图胜千言]] [fn:aPictureWorthAThousandWord] ，图能够用简单的方式表达出可能需要很复杂的语言才能描述清的想法。一个广泛的认识就是人更容易理解图片。人们喜欢玩界面华丽的游戏，而同样的游戏如果是文本的，就会让人失去兴趣。一篇博客如果内容较多，有那么几张图片，怎么也会比全部长篇的文字要容易阅读。
+
+那么emacs如何来插入一个给力的图片呢？
+
+使用{{{Latex}}}的graphicx包。{{{Latex}}}的排版与图片功能相当的强大，但是它的门槛更高，使用比较复杂，应用场合主要在科学论文。一般的应用，博客，日志啥的话，投入产出比太低了。
+
+{{{wiki-mode}}},{{{Muse-mode}}}和{{{org-mode}}}这样的写作工具[fn:wikiMuseOrg]，使用[image]标签，插入本地图片，然后生成html、pdf；或者插入图片的url地址，也是一种使用较多的方式。
+
+这种方式比较普遍，方便，但不快捷。画一张合适的、给力的图片需要什么？？
+
+*一个软件，熟练的操作。*
+
+软件候选者：{{{photoshop}}}，收费，咱学习之用，使用绿色版 。一个{{{photoshop}}}的使用那就是N本书，想真正的学会使用{{{photoshop}}}来绘制流程图，也并不满足方便，快捷两个条件。{{{MicrosoftVisio}}}，同样，收费，咱学习之用，使用绿色版，学习{{{MicrosoftVisio}}}同样是需要一定的周期滴，也同样不满足方便，快捷两个条件。而且这两个软件有大缺点，跨平台不好，使用过程繁琐。
+
+所以，我最衷爱的，ASCII图[fn:asciiArt]就闪亮登场了，当当当当~~~，大家鼓掌。
+
+ASCII图可以在任何文本适用的地方存在，如Internet Relay Chat（[[http://emacser.com/erc.htm][ IRC）]], E-mail, 论坛，BBS，非图形界面，同时可以在源代码中表示公司或产品的logo，或流程图。甚至有geeker将整个程序直接写成一坨ASCII图，看起来是相当的给力[fn:obscuedCCode]。
+
+介绍了什么是ASCII图，它的好处。那么下一步，就讨论下如何绘制ASCII图。我们肯定不会是一个字符一个字符的去敲，然后拼起来，将简单的事情复杂化，是我的专长，但是我却从不做愚蠢的事情。画ASCII图，我们有专门、专业的软件[fn:asciiSoftware]。
+
+但是既然我们是emaser，我们当然要看一下，emacs能不能做这件事情呢？答案肯定是YES。
+
+emacs中有两个mode处理ASCII图，{{{picture-mode}}}和{{{artist-mode}}}。{{{picture-mode}}}请参考emacswiki，而前边我们介绍过{{{artist-mode}}}，没看过的童鞋[[http://emacser.com/artist-mode.htm][请进时光穿梭机]]。
+
+介绍完了背景知识，我们来一个真实的例子。
+
+** 应用场景
+我们有大批的cpp，h这样的源文件，每天和他们打交道。有一天我们想要给人演示对于源文件，我们都能做些什么。我们可以使用编辑器编辑它们，以使他们完成我们需要的功能；编译器编译他们，生成可执行文件；doxygen处理他们，生成源代码的文档...，其它用途还用很多，比如把程序写成下面的样子，成功的完成zhuangbility这样艰巨的任务：
+#+BEGIN_EXAMPLE
+#include                                     <math.h>
+#include                                   <sys/time.h>
+#include                                   <X11/Xlib.h>
+#include                                  <X11/keysym.h>
+                                          double L ,o ,P
+                                         ,_=dt,T,Z,D=1,d,
+                                         s[999],E,h= 8,I,
+                                         J,K,w[999],M,m,O
+                                        ,n[999],j=33e-3,i=
+                                        1E3,r,t, u,v ,W,S=
+                                        74.5,l=221,X=7.26,
+                                        a,B,A=32.2,c, F,H;
+                                        int N,q, C, y,p,U;
+                                       Window z; char f[52]
+                                    ; GC k; main(){ Display*e=
+ XOpenDisplay( 0); z=RootWindow(e,0); for (XSetForeground(e,k=XCreateGC (e,z,0,0),BlackPixel(e,0))
+; scanf("%lf%lf%lf",y +n,w+y, y+s)+1; y ++); XSelectInput(e,z= XCreateSimpleWindow(e,z,0,0,400,400,
+0,0,WhitePixel(e,0) ),KeyPressMask); for(XMapWindow(e,z); ; T=sin(O)){ struct timeval G={ 0,dt*1e6}
+; K= cos(j); N=1e4; M+= H*_; Z=D*K; F+=_*P; r=E*K; W=cos( O); m=K*W; H=K*T; O+=D*_*F/ K+d/K*E*_; B=
+sin(j); a=B*T*D-E*W; XClearWindow(e,z); t=T*E+ D*B*W; j+=d*_*D-_*F*E; P=W*E*B-T*D; for (o+=(I=D*W+E
+*T*B,E*d/K *B+v+B/K*F*D)*_; p<y; ){ T=p[s]+i; E=c-p[w]; D=n[p]-L; K=D*m-B*T-H*E; if(p [n]+w[ p]+p[s
+]== 0|K <fabs(W=T*r-I*E +D*P) |fabs(D=t *D+Z *T-a *E)> K)N=1e4; else{ q=W/K *4E2+2e2; C= 2E2+4e2/ K
+ *D; N-1E4&& XDrawLine(e ,z,k,N ,U,q,C); N=q; U=C; } ++p; } L+=_* (X*t +P*M+m*l); T=X*X+ l*l+M *M;
+  XDrawString(e,z,k ,20,380,f,17); D=v/l*15; i+=(B *l-M*r -X*Z)*_; for(; XPending(e); u *=CS!=N){
+                                   XEvent z; XNextEvent(e ,&z);
+                                       ++*((N=XLookupKeysym
+                                         (&z.xkey,0))-IT?
+                                         N-LT? UP-N?& E:&
+                                         J:& u: &h); --*(
+                                         DN -N? N-DT ?N==
+                                         RT?&u: & W:&h:&J
+                                          ); } m=15*F/l;
+                                          c+=(I=M/ l,l*H
+                                          +I*M+a*X)*_; H
+                                          =A*r+v*X-F*l+(
+                                          E=.1+X*4.9/l,t
+                                          =T*m/32-I*T/24
+                                           )/S; K=F*M+(
+                                           h* 1e4/l-(T+
+                                           E*5*T*E)/3e2
+                                           )/S-X*d-B*A;
+                                           a=2.63 /l*d;
+                                           X+=( d*l-T/S
+                                            *(.19*E +a
+                                            *.64+J/1e3
+                                            )-M* v +A*
+                                            Z)*_; l +=
+                                            K *_; W=d;
+                                            sprintf(f,
+                                            "%5d  %3d"
+                                            "%7d",p =l
+                                           /1.7,(C=9E3+
+                              O*57.3)%0550,(int)i); d+=T*(.45-14/l*
+                             X-a*130-J* .14)*_/125e2+F*_*v; P=(T*(47
+                             *I-m* 52+E*94 *D-t*.38+u*.21*E) /1e2+W*
+                             179*v)/2312; select(p=0,0,0,0,&G); v-=(
+                              W*F-T*(.63*m-I*.086+m*E*19-D*25-.11*u
+                               )/107e2)*_; D=cos(o); E=sin(o); } }
+
+#+END_EXAMPLE
+#+BEGIN_EXAMPLE
+
+//程序在linux下使用以下命令编译：
+//cc banks.c -o banks -DIT=XK_Page_Up -DDT=XK_Page_Down \
+//	-DUP=XK_Up -DDN=XK_Down -DLT=XK_Left -DRT=XK_Right \
+//	-DCS=XK_Return -Ddt=0.02 -lm -lX11 -L/usr/X11R6/lib
+#+END_EXAMPLE
+
+但是本文中，我们只关注对cpp源文件的前三点应用：编辑，编译，生成文档。
+** ASCII图
+好吧，我们的第一个演示版本。
+
+#+BEGIN_EXAMPLE
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         | Doxgen   |
+                         | Document |
+                         +----------+
+
+#+END_EXAMPLE
+第一个版本，作为一种可嵌入文本的ASCII图，绘制简单，简单，大方，实用（情人眼里出西施？）......
+
+但是，有童鞋说过（主要是我自己感觉）实用性不强，很多人是不接受ASCII图的，文章里夹了这么一个ASCII图，别人抵触情绪马上起来，这无关技术，只是习惯。
+
+** 简单框图
+那么，如果这是一幅图，看起来或许更爽....。这样可以吗？好吧，我们试一下，把上面的ASCII图变为图片。
+
+#+BEGIN_DITAA  asciiExample.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         | Doxgen   |
+                         | Document |
+                         +----------+
+
+
+#+END_DITAA
+
+OMG，这个如何做到的？:)，我们使用的是如下代码，将ASCII图转化为png(org-mode中)。
+
+#+BEGIN_EXAMPLE
+#+BEGIN_DITAA  asciiExample.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         | Doxgen   |
+                         | Document |
+                         +----------+
+
+
+#+END_DITAA
+#+END_EXAMPLE
+
+这里使用的是{{{ditaa}}}，第一次听说{{{ditaa}}}这个玩意是在从punchagan的博客，即[[http://punchagan.wordpress.com/2010/07/21/ditaa-and-org-mode/][这里]] [fn:orgblogAuthor]，当时我问了一个{{{org-mode}}}中怎样嵌入ASCII图的问题[fn:askForAsciiInorg]，他就给了我这么大一个鱼杆！！
+
+** 着色
+好，言归正传。看起来，还不错。但是精益求精是我们的特点，嘿嘿。我们希望区分一下，源用红色表示，处理过程用绿色表示，结果呢，我们用黑色表示，这样看起来或许更美观一些，美观也就是用{{{photoshop}}}或者{{{MicrosoftVisio}}}画图追求的效果嘛。GO.
+
+#+BEGIN_DITAA  asciiExampleWithColor.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       |  cPNK    |      |  cRED    |         |   cGRE   |         |  cPNK    |
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       |          |      |          |         |          |         |          |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         |  cGRE    |
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         |  cPNK    |
+                         | Doxgen   |
+                         | Document |
+                         |          |
+                         +----------+
+
+
+#+END_DITAA
+
+着色的代码如下：
+#+BEGIN_EXAMPLE
+#+BEGIN_DITAA  asciiExampleWithColor.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       |  cPNK    |      |  cRED    |         |   cGRE   |         |  cPNK    |
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       |          |      |          |         |          |         |          |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         |  cGRE    |
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         |  cPNK    |
+                         | Doxgen   |
+                         | Document |
+                         |          |
+                         +----------+
+
+
+#+END_DITAA
+#+END_EXAMPLE
+** 完整而优雅的图案
+看起来，到现在，我们做的还不错。但是，作为一个喜欢把简单事情复杂化的geek，显然我们还不能不满足。这个图没有区分度，h,cpp是输入，Excutable file是磁盘文件，Doxygen Document是文档，但是图中，它们看起来没有区分开，我们需要在休息前，再来点小的修葺。
+
+#+BEGIN_DITAA  asciiExampleWithColorAndType.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       |  cPNK    |      |  cRED    |         |   cGRE   |         |  cPNK    |
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       | {s}      |      |  {io}    |         |          |         |    {s}   |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         |  cGRE    |
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         |  cPNK    |
+                         | Doxgen   |
+                         | Document |
+                         |    {d}   |
+                         +----------+
+
+
+#+END_DITAA
+代码如下：
+#+BEGIN_EXAMPLE
+#+BEGIN_DITAA  asciiExampleWithColorAndType.png -o -r -S
+
+       +----------+ edit +----------+   input +----------+ compile +----------+
+       |  cPNK    |      |  cRED    |         |   cGRE   |         |  cPNK    |
+       | refined  |<-----+ h,cpp    +-------->+ compiler,+-------->+Executable|
+       |   h,cpp  |      |          |         | linker   |         |   File   |
+       | {s}      |      |  {io}    |         |          |         |    {s}   |
+       +----------+      +----+-----+         +----------+         +----------+
+                              | input
+                              v
+                         +----------+
+                         |  cGRE    |
+                         | doxygen  |
+                         |          |
+                         +----+-----+
+                              | process
+                              v
+                         +----------+
+                         |  cPNK    |
+                         | Doxgen   |
+                         | Document |
+                         |    {d}   |
+                         +----------+
+
+
+#+END_DITAA
+#+END_EXAMPLE
+Done！该喝杯咖啡了。哦，不，对我来说，该去睡会觉了，Zzzzzz
+** 中文
+能使用中文也算是基本需求了，那么最后来一个试验用图。   
+#+BEGIN_DITAA  asciiExampleWithColorAndTypeUtf8.png -e gb2312
+              +------------+     +------------+
+              | 中文         |---->|  中文        |
+              |            |     |            |
+              +------------+     +------------+
+#+END_DITAA
+
+#+BEGIN_EXAMPLE
+#+BEGIN_DITAA  asciiExampleWithColorAndTypeUtf8.png -e gb2312
+
+              +------------+     +------------+
+              | 中文        |---->|    中文    |
+              |            |     |            |
+              +------------+     +------------+
+
+
+#+END_DITAA
+#+END_EXAMPLE
+正确显示中文需要文章使用的编码和ditaa指定的编码一致。
+
+但是在加入中文的时候，边框的对齐很难做到，不得不说是个让人很不爽的地方。              
+** {{{Ditaa}}}
+尽管我们是emacser，但是我们不能忽略了这次的主角，也就是{{{ditaa}}} ~~~~。我们能玩这么多的花样，还有赖于{{{ditaa}}}。好吧，我们介绍主角出场吧。
+
+{{{Ditaa}}}的作者是Stathis Sideris，是一个java程序(做为一个c++程序员，我表示鸭梨很大)，想要使用diataa的话，你的电脑 *必须* 安装java，并且使java的bin目录在emacs的path内。
+
+可以去[[http://ditaa.sourceforge.net/][这里]]下载，具体的语法请参考{{{ditaa}}}的主页，本文使用的例子用到了大部分、而不是全部特性。
+
+** 不算小结的小结
+{{{org-mode}}}+{{{artist-mode}}}+{{{ditaa}}}是一个emacs中使用图片的很好的办法，但不是万能的。实际上，主要画流程图，框图比较好用。下面我列举了两个可以在emacs中胜任绘图需求的方法：
++ {{{graphviz}}}
++ python + matlab lib
+
+{{{graphviz}}}已然非常强大，而matlab绘制科学图形是更胜一筹，鉴于篇幅，本文不再展开。
+
+更多........敬请期待。
+* Footnotes
+
+[fn:aPictureWorthAThousandWord] 可爱的wiki利用一则漫画解释一图胜千言：A:为什么一图胜千言 B:你打字多快 A:25/分钟  B:这就对了，当我画40分钟画好了我的图，.........,你正好敲了1000个字。要看出处的漫画，[[http://en.wikipedia.org/wiki/A_picture_is_worth_a_thousand_words][猛击我]]。
+[fn:wikiMuseOrg] Wiki-mode, Muse-mode, org-mode就是博客，日志，随笔这样的居家过日子必备之工具。
+[fn:asciiArt] ASCII图 是一种图行设计技术，使用ascii 标准中128个可见字符组成的picture，可用在电脑上的演示。
+[fn:obscuedCCode] http://en.wikipedia.org/wiki/International_Obfuscated_C_Code_Contest。
+[fn:asciiSoftware] ascii 编辑软件 http://en.wikipedia.org/wiki/List_of_text_editors#ASCII_and_ANSI_art。
+[fn:orgblogAuthor]  punchagan是org2blog的作者，同时推荐一个牛人[[http://www.twitter.com/sachac][sacha]]。
+[fn:askForAsciiInorg] http://punchagan.wordpress.com/2010/07/20/org2blog-readme/#comment-710 .

@@ -1,0 +1,134 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-20 13:38:31 Tuesday by ahei" -->
+
+<!-- Emacs下的多媒体系统 － EMMS -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#bigclean" target="_blank"><span style="color: #0000ff;"><b>bigclean</b></span></a>
+
+<img class="alignright" title="EMMS" src="screenshots/emms.png" width="160" height="80"/>
+
+<h3>简介</h3>
+
+<p><a href="http://www.gnu.org/software/emms/" target="_blank">emms</a> 是 emacs中的多媒体系统，可以用来在 emacs 调用外部的音乐播放器播放音乐。通过emacs的elisp脚本的控制，可以自定义播放列表的样式，状态栏的显示甚至歌词的自动下载和动态显示。<!--more--></p>
+
+<h3>安装</h3>
+
+<h4>emacs 及 emms</h4>
+
+<p>在 windows 下，建议使用<a href="http://ourcomments.org/Emacs/EmacsW32.html" target="_blank">emacsw32</a>，emms 建议使用emms-3.0版本，也可以使用最新的git版本，看个人喜好。</p>
+
+<h4>外部程序</h4>
+
+<p>使用 emms 比较麻烦的是在 windows 下没有 native 的 cli 音乐播放程序，因此你需要自己下载所需的音乐播放软件，建议使用 mplayer，mpg123。linux下，mpg321，mpd 或许效果会更好。特别是 mpd，它的设计思想就是 c/s 架构的。</p>
+
+<p>另外，为了显示歌曲信息，需要解析音乐文件的标签，如果你的音乐文件的 tags比较有 序，那就可以使用 <a href="http://www.ibiblio.org/mp3info/" target="_blank">mp3info</a>来对你的音乐读取标签，可以用来做播放列表和状态栏的进一步处理。如果你的音乐文件的 tags处于无序，也可以考虑直接使用音乐文件名作为标签。</p>
+
+<p>自己选择的是 mplayer，emms 对它的支持比较好，mpg123 可能未来会考虑拓展。</p>
+
+<h3>配置</h3>
+
+<h4>基本配置</h4>
+
+<p>EMMS 提供了一个 emms-setup.el 可以方便地进行必要的设置，按照功能需求可以使用minimalistic 、standard 、all 以及包括了各种还在测试中的功能的 devel。自己选择的是在 standard 的基础上增加自己需要的插件。</p>
+<pre lang="lisp" line="1">
+(require 'emms-setup)
+(emms-standard)
+;; no cli volume setup tools in windows
+                                        ;(require 'emms-volume)
+(require 'emms-score)
+(emms-score 1)
+;; autodetect musci files id3 tags encodeing
+(require 'emms-i18n)
+;; auto-save and import last playlist
+(require 'emms-history)
+</pre>
+
+<h4>播放列表</h4>
+
+<p>用 emms 大部分的时间，可能大部分的时间不大会关注播放列表的现实，但如果要做展示或是查看一些音乐信息的话，还是需要自己定义的。可能这里也是 emms的乐趣所在，因为默认的播放列表可能你不一定会满意，但是自定义需要一定lisp基础。</p>
+
+<p>可以自定义一个显示函数，hook 到 emms-track-description-function即可。</p>
+<pre lang="lisp" line="1">
+;; my customizable playlist format
+(defun bigclean-emms-info-track-description (track)
+  "Return a description of the current track."
+  (let ((artist (emms-track-get track 'info-artist))
+        (title (emms-track-get track 'info-title))
+        (album (emms-track-get track 'info-album))
+        (ptime (emms-track-get track 'info-playing-time)))
+    (if title 
+        (format 
+         "%-35s %-40s %-35s %5s:%-5s"
+         (if artist artist "")
+         (if title title "")
+         (if album album "")
+         (/ ptime 60)
+         (% ptime 60)))))
+(setq emms-track-description-function
+      'bigclean-emms-info-track-description) 
+</pre>
+
+<p>这个自定义播放列表不大完善的地方在于，当显示英文字符时，一切表现的很好，但是如果中文和英文混合，就会显得很凌乱，原因在于 format 函数把一个汉字当做两个英文字符处理，暂时还没有想到可以解决此问题的 tricks。</p>
+
+<h4>状态栏</h4>
+
+<p>同自定义的播放列表相似，只是需要把自定义的显示函数hook到emms-mode-line-mode-line-function 就可以的。</p>
+<pre lang="lisp" line="1">
+;; format current track,only display title in mode line
+(defun bigclean-emms-mode-line-playlist-current ()
+  "Return a description of the current track."
+  (let* ((track (emms-playlist-current-selected-track))
+         (type (emms-track-type track))
+         (title (emms-track-get track 'info-title)))
+    (format "[ %s ]"
+            (cond ((and title)
+                   title)))))
+(setq emms-mode-line-mode-line-function
+      'bigclean-emms-mode-line-playlist-current)
+</pre>
+
+<h4>快捷键绑定</h4>
+
+<p>为了尽可能的与 emms-playlist-mode状态下的快捷键兼容，因此大部分的全局快捷键只是添加了前缀 "C-c e"而已，另外，也仿照这个规则，自己定义了一组相似的快捷键。</p>
+<pre lang="lisp" line="1">
+;; global key-map
+;; all global keys prefix is C-c e
+;; compatible with emms-playlist mode keybindings
+;; you can view emms-playlist-mode.el to get details about 
+;; emms-playlist mode keys map
+(global-set-key (kbd "C-c e s") 'emms-stop)
+(global-set-key (kbd "C-c e P") 'emms-pause)
+(global-set-key (kbd "C-c e n") 'emms-next)
+(global-set-key (kbd "C-c e p") 'emms-previous)
+(global-set-key (kbd "C-c e f") 'emms-show)
+(global-set-key (kbd "C-c e >") 'emms-seek-forward)
+(global-set-key (kbd "C-c e <") 'emms-seek-backward)
+;; these keys maps were derivations of above keybindings
+(global-set-key (kbd "C-c e S") 'emms-start)
+(global-set-key (kbd "C-c e g") 'emms-playlist-mode-go)
+(global-set-key (kbd "C-c e t") 'emms-play-directory-tree)
+(global-set-key (kbd "C-c e h") 'emms-shuffle)
+(global-set-key (kbd "C-c e e") 'emms-play-file)
+(global-set-key (kbd "C-c e l") 'emms-play-playlist)
+(global-set-key (kbd "C-c e r") 'emms-toggle-repeat-track)
+(global-set-key (kbd "C-c e R") 'emms-toggle-repeat-playlist)
+(global-set-key (kbd "C-c e u") 'emms-score-up-playing)
+(global-set-key (kbd "C-c e d") 'emms-score-down-playing)
+(global-set-key (kbd "C-c e o") 'emms-score-show-playing)
+</pre>
+
+<p>快捷键的定义，只要自己觉得合理，好记就可以。仅作参考。</p>
+
+<p>emms也可以显示指定目录中的歌词文件，也可以利用脚本自动下载歌词，自己没有配置，不再赘述。</p>
+
+<h4>tips</h4>
+
+<p>主要是编码的设置。</p>
+<pre lang="lisp" line="1">
+;; coding settings
+(setq emms-info-mp3info-coding-system 'gbk
+      emms-cache-file-coding-system 'utf-8
+      ;; emms-i18n-default-coding-system '(utf-8 . utf-8)
+      )
+</pre>

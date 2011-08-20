@@ -1,0 +1,82 @@
+#title google-maps-el --emacs中的谷歌地图[done]
+
+** 什么是google-map-el
+
+作者原话：google-maps 是一个emacs的扩展，允许在emacs中显示google地图。
+
+
+如果想瞻仰生下google-maps-el这个蛋的母鸡，[[http://julien.danjou.info/google-maps-el.html][猛击我]]。
+
+google-maps使用了 [[http://code.google.com/apis/maps/documentation/staticmaps/][Google static Maps API]]和[[http://code.google.com/apis/maps/documentation/geocoding/][Google Maps Geocoding API]][1]。
+
+作者的效果图：
+
+[[http://julien.danjou.info/images/emacs-google-maps.png]]
+
+
+<literal>
+<!--more-->
+</literal>
+
+** google-mpas-el如何使用
+
+*** 进入
+M-x google-maps
+
+*** 使用
+google maps mode下的键绑定，对应命令，相应解释
+
+| 键绑定    | 命令                              | 解释              |
+| +         | google-maps-static-zoom-in        | 放大              |
+| , .. -    | google-maps-static-zoom-out       | 缩小              |
+| .         | google-maps-static-zoom-in        | 放大              |
+| <         | google-maps-static-zoom-out       | 缩小              |
+| >         | google-maps-static-zoom-in        | 放大              |
+| c         | google-maps-static-center         | 设置中心点位置[2] |
+| g         | google-maps-static-refresh        | 刷新              |
+| m         | google-maps-static-manage-marker  | 地标              |
+| q         | google-maps-static-quit           | 退出              |
+| t         | google-maps-static-set-maptype    | 地图模式[3]       |
+| v         | google-maps-static-manage-visible | 不懂[4]            |
+| w         | google-maps-static-copy-url       | 拷贝当前地图的url |
+| z         | google-maps-static-zoom           | 放缩至1倍         |
+| <mouse-4> | google-maps-static-zoom-mouse-in  | 放大              |
+| <mouse-5> | google-maps-static-zoom-mouse-out | 缩小              |
+
+访问五道口的效果[5]：
+
+
+[[http://fangzhzh.admindigest.com/pictures/2010/7/google-maps.jpg]]
+
+** 实际操作
+下面展示了，如何使用google-maps-el来生成以下的效果。
+1 M-x google-maps ，在minibuffer中输入:wudaokou, beijing(进入五道口)
+2 m Tsinghua RET p(标记清华大学为P)
+3 m Peking University RET b(标记北京大学为B)
+4 m Qinghuayuan Railway RTT q(标记清华园站为Q)
+5 m Zhanchun Bridge RET z(标记展春桥为Z)
+结果如下：
+
+[[http://fangzhzh.admindigest.com/pictures/2010/7/google-maps-roadmap.jpg]]
+
+想要更炫的如作者展示的一样的结果，请参考作者图片上的设置，可以给marker设置表示颜色，在地图上显示从A地点到B地点的路径[6]。
+
+** 为什么使用google-maps-el
+这个原因不好说，不能说，也说不好。只是这里有两个新闻[[http://internet.solidot.org/article.pl?sid=10/07/08/0938214&from=rss][solidot]], [[http://www.williamlong.info/archives/2235.html][月光博客]]。
+
+google-maps方便，基于api的也应该更安全吧。
+
+就算没有这些更安全、更方便，闲暇时把google maps搞进emacs，show给别人看，然后暗爽，也算是一种自娱自乐吧，呵呵
+
+[1] [[http://en.wikipedia.org/wiki/Application_programming_interface#Web_APIs][API]] 真是个好东西。当我的思维还停留web时代以前，认为API只是库或者框架对外提供的接口，方便库和框架与其他软件交互时，API已经远远超出这个范畴，进入web2.0时代，详细了解web APIS，[[http://en.wikipedia.org/wiki/Web_service][猛击我]]。
+[2] 支持中文，英文，中文拼音。
+[3] 有四种hybrid(混合地图),roadmap(道路图),satellite(卫星图),terrain(地域图)。
+[4] 作者效果图中有对visible的设置，应该是有用的，欲了解详细的geeker请读文档代码。
+[5] hybrid效果。
+[6] 路径功能，个人感觉不实用，路径需要在配置文件中写，而不能实时查询。感兴趣的童鞋可以扩展此功能:)
+
+
+
+
+
+

@@ -1,0 +1,462 @@
+#+OPTIONS: ^:nil author:nil timestamp:nil creator:nil
+
+我的 GNU Emacs 配置"程序"
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: 杨博华</span><a href="http://www.cnblogs.com/doveyoung/" target="_blank"><span style="color: #0000ff;"><b>David Young</b></span></a>
+#+END_HTML
+
+** 我的 GNU Emacs 配置程序
+
+呃……一般来说大家都叫“配置文件”，是吧。当然我也是这么叫的。那就让我们还是继续延续这个名字，就叫 Emacs配置文件。
+
+那么配置文件是我们定制和扩展Emacs最重要的地方，一般来说，最常用的配置文件是 =.emacs= 。当然也可以是别的文件，具体可以查阅 [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html#Init-File][GNU Emacs Manual]]。
+
+#+HTML: <!--more-->
+
+然而随着使用的日久，日积月累，定制的设置越来越多， =.emacs= 变得越来越庞大，渐渐的就会增大到难以维护的地步。直到某日在 emacser.cn 看到王纯业的 [[http://ann77.emacser.com/Emacs/EmacsOrginzeDotEmacs.html][组织 .emacs 的文件内容的技巧]]，将配置信息分成多个文件，维护的困难才稍稍得以缓解。但是即使是拆分以后，文件仍然会变得很大，而且还在不断增大，维护起来仍然压力很大。有没有好的解决办法呢？ ahei 的DEA我还没有去仔细看过，毕竟他那个太大了，我的配置还没有大到那个地步。我希望的是简洁高效的解决办法。能够在我的配置文件里面只有我最关心的内容，不带一点多余的东西呢？
+
+直到最近开始着手探索 Lisp，体会到 Lisp语言强大的描述能力和抽象能力，随即萌发了将众多的配置细节直接用写成简洁清晰的 =list= ，然后用 Lisp Code进行处理，这样就可以去掉配置文件里面那些无穷无尽的方法调用了。 走了这个路子之后，原来的“配置文件”就摇身一变，变成“配置程序”了。
+
+*** .emacs
+
+闲话不说了，开始捞干的吧。让我们先从最基本的 =.emacs= 开始。在这种方式下 =.emacs= 文件就非常简单了。它的核心部分一共只有两行。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(add-to-list 'load-path "~/Shell/config/emacs.el" "~/Shell/config/emacs.init")
+
+(mapc 'load (directory-files "~/Shell/config/emacs.init" t "^[a-zA-Z0-9].*.el$"))
+
+</pre>
+#+END_HTML
+
+第一行通过 =load-path= 注册扩展文件的所在位置。第二行通过 =mapcar= 函数逐个装载 "=~/Shell/config/emacs.init=" 目录下的所有配置文件。就是这么简单。其余的内容多数都是 Emacs Customization 添加的代码。或者换句话说，现在的 =.emacs= 文件完全留给 Emacs用了。
+
+其实在采用这种方式之前，我是不用什么 Customization 的。当然，不用的代价是显而易见的。问题在于在原来那种配置方式之下， =.emacs= 本身就已经够烦够乱了，如果 Emacs的 Customization 再往里面添乱，就更难维护和控制了。不过现在没事了。我自己使用的一共只有两行，剩下的所有地方随便它写吧。所以呢，我现在至少还用 Customization修改了一下 ansi-color，默认颜色里面的深蓝色的目录实在是太刺眼了。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector [default default default italic underline bold bold-italic modeline])
+ '(ansi-color-names-vector ["black" "red" "PaleGreen" "yellow" "DodgerBlue1" "magenta" "cyan" "white"]))
+</pre>
+#+END_HTML
+
+另外，还有一个地方需要提到一下， 在 =.emacs= 里面我还保留了一段中文字体的设置。以前 emacser.com 里面有人发过字体设置的东西。但是由于 GNU Emacs 23以后基本都在 daemon方式下工作，如果直接使用原来那种方式设置中文字体的话，在 emacsclient中是无效的，所以要把它加到 =make-frame= 的hook里面。这样每次 =emacsclient -c= 生成的 frame就都是指定的中文字体了。 当然这下面这个函数还有一个缺陷，就是如果不是使用 daemon 方式的话…… 你懂得，鱼和熊掌，不可兼得。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(add-hook 'after-make-frame-functions
+  (lambda(arg)
+    (if  (>= (length (frame-list)) 1)
+	(set-fontset-font  "fontset-startup" 'chinese-gbk (font-spec :family "文泉驿微米黑") nil 'prepend)
+      )
+    ) t
+)
+</pre>
+#+END_HTML
+
+*** color-theme.el
+
+那么我自己的配置信息写在哪些地方呢？让我们看看 "=~/Shell/config/emacs.init="目录下的都有哪些文件
+
+#+BEGIN_HTML
+<pre lang="shell" line="1">
+2 : 2023 : 13:03:26 : ~/Shell/config/emacs.init 
+dove@bash-4.1$ du -sh *.el
+8.0K	calendar-setup.el
+28K	color-theme.el
+28K	dove-ext.el
+4.0K	keybindings.el
+8.0K	org-mode.el
+8.0K	plugins.el
+4.0K	settings.el
+
+2 : 2024 : 13:03:35 : ~/Shell/config/emacs.init 
+dove@bash-4.1$ du -sh .emacs
+4.0K	.emacs
+
+2 : 2025 : 13:04:07 : ~/Shell/config/emacs.init 
+dove@bash-4.1$ 
+</pre>
+#+END_HTML
+
+就是这些地方了。每个文件的作用从文件名上就能清晰的看出来。只有这个"=dove-ext.el="文件需要解释一下，这里存放的是我自己编写的所有扩展函数。
+
+下面让我们逐个看一看这些文件的内容。"=calendar-setup.el=" 就不说了，这个文件基本上就是从网上搜来的，我自己也就是定义几个节日而已。
+
+"=color-theme.el=" 是主题设置文件。基本上就是 =color-theme-gnome2= 的翻版，我自己做了一些简单的修改。之所以把他存在一个单独的文件里面主要是因为 =color-theme= 实在是太长了，放在哪个文件里都会影响其他的内容。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(eval-when-compile    (require 'color-theme))
+
+(defun my-color-theme ()
+  "Color theme created 2010-04-09."
+;  (interactive)
+  (color-theme-install
+   '(my-color-theme
+;     ((background-color . "#102C29")
+     ((background-color . "darkslategrey")
+;     (( background-color . "black")
+      (background-mode . dark)
+      (border-color . "black")
+      (cursor-color . "LightGray")
+;      ... ... ... ... theme 太长，中间省略了
+     (woman-bold-face ((t (:bold t :weight bold))))
+     (woman-italic-face ((t (:foreground "beige"))))
+     (woman-unknown-face ((t (:foreground "LightSalmon"))))
+     (zmacs-region ((t (:background "dark cyan" :foreground "cyan")))))))
+
+(eval-when-compile (require 'color-theme))
+(color-theme-initialize)
+
+(add-hook 'after-make-frame-functions 
+	  (lambda (arg)
+	    ""
+	    (my-color-theme)) t)
+
+</pre>
+#+END_HTML
+
+另外我在加载 color-theme 的时候做了一个处理，把 =my-color-theme= 加到 =after-make-frame-functions= 这个 hook里面去，这样只有创建 frame的时候才会执行 =my-color-theme= 。  如果不是 =X= 环境，例如用 =emacs -nw= 的时候，就不要加载 =my-color-theme= 了。因为这个主题到了终端模式下，那个背景颜色根本没法看（汗一个）。虽然偶自己从来都是工作在 =X= 里面的。
+
+这个问题在网上找到的有些解决办法是判断一下是不是 =window-system= ，这种办法到了 daemon模式下是会出错的。看来 Emacs 23 以后的 daemon 模式下的配置方法还是需要进一步深入研究的。什么东西都放到 =after-make-frame-functions= 这个地方毕竟也不是个事儿。
+
+*** settings.el
+
+下一个来看的是 settings.el。 settings 的任务其实很简单，就是设置全局变量。全局变量的设置就是 =setq= 嘛。这个事情简单的不能再简单了。但是无数的 =setq= 无论是写起来还是读起来都会让人很郁闷。还好，我们记得 =setq= 不但可以设置一个变量，它实际上可以处理一个 =list= 。嗨，既然说它可以，为什么还要让他闲着呢？ 让我们动手吧，把所有的变量和值写在一个 =list= 里面，多余的 =setq= 通通都删掉吧。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(icomplete-mode 1)
+(scroll-bar-mode -1)
+;(ruler-mode -1)
+
+(setq save-abbrevs t
+      x-select-enable-clipboard               t
+      ispell-dictionary                       "english"
+      frame-title-format                      "%b %n %I"
+      inhibit-startup-message                 t
+      column-number-mode                      t
+;         ... ... ... ... 内容太多，中间省略
+      ido-toggle-regexp                       t
+      dim:switch-window-relative              nil
+      shell-file-name                         "/usr/bin/bash"
+      default-major-mode                      'text-mode
+)
+
+;; Misc
+(setq-default abbrev-mode                    t
+	      line-spacing                   4
+)
+
+(setenv "EMACSSHELL"                         shell-file-name)
+
+</pre>
+#+END_HTML
+
+*** keybindings.el
+
+再接下来是 "=keybindings.el=" 。这个文件定义所有的按键绑定。通常我们定义 key binding 的时候都是使用 =(global-set-key (kbd "C-c x) 'some-function)= 问题是 =global-set-key= 没有像 =setq= 那么方便的 =list= 处理方式。怎么办？ 那就写一个吧。还能怎么办呢？ 这就是 =set-key-bindings=
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun set-key-bindings (action bindingList)
+  ""
+  (mapcar (lambda(lst)
+	  ""
+	  (let ((x (car lst))
+		(y (car (last lst))))
+	    (funcall action x y))) bindingList ))
+</pre>
+#+END_HTML
+
+这个 =set-key-bindings= 接收一个函数作为指令，告诉它需要做什么，然后再接收一个 =list= ，作为数据。然后通过 =mapcar= 遍历这个 =list= ，对其中的每一个元素执行接受到的指令。
+
+这就是 Lisp语言非常精彩的地方。Lisp 不仅仅能够处理 list，更重要的是它能够像传递数据一样简单方便的传递指令(函数)。这个强大的特性使得我可以不必把 =global-set-key= 硬性的写在 =set-key-bindings= 里面。为什么要这样呢？还用说吗？如果我想要做 =local-set-key= 我会怎么做？ 我不许要去修改 =set-key-bindings= ，我只需要把 =local-set-key= 作为指令传递给它就行了。换句话说我可以传递任何指令给它，告诉它做任何事，而不需要再做任何修改。在 Lisp的世界里，没有无聊的 =case sth in something= 。
+
+扯远了，让我们还回到按键绑定上来。现在就可以把按键和功能写成一个简单的 =list= ，交给 =set-key-bindings= 去处理了。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(set-key-bindings 'global-set-key	
+ (list 
+	 '([f2]                            calendar)
+	 '([(shift f2)]                    remember)
+	 '([f5]                            revert-buffer)
+	 '([f10]                           rename-buffer)
+	 '([f11]                           query-replace)
+	 '([(shift f11)]                   query-replace-regexp)
+;         ... ... ... ... 按键太多，中间省略
+	 ;; copy paste operations 
+	 (list (kbd "C-=")                 'set-mark-command)
+	 (list (kbd "C-c l")               'copy-line)
+	 (list (kbd "C-c w")               'copy-word)
+	 (list (kbd "C-S-k")               (lambda()  " " (interactive) (kill-visual-line -1)))
+	 (list (kbd "C-c s")               'thing-copy-string-to-mark)
+	 (list (kbd "C-c a")               'thing-copy-parenthesis-to-mark)
+	 (list (kbd "C-c p")               'copy-paragraph)
+	 (list (kbd "C-x a d")             'delete-region)
+;         ... ... ... ... 按键太多，中间省略
+	 (list (kbd "C-c c")               '(lambda() " " (interactive) (if emaci-mode  (emaci-mode-off) (emaci-mode-on))))
+	 (list (kbd "M-DEL")
+	   (lambda(&optional arg) 
+	     "Act as the obsolete dove-backward-kill-word " 
+	     (interactive "P")
+	     (if arg 
+		 (let ((arg (- 0 arg))) (dove-forward-kill-word arg))
+	       (dove-forward-kill-word -1))))
+ 
+))
+
+</pre>
+#+END_HTML
+
+*** plugins.el
+
+=plugins.el= 的作用是引用各种网上下载的第三方扩展。简单来说就是成堆成堆的 =(require 'something)= 。由于 =require= 函数只需要一个参数，这意味着我们将只需要一个一维的 =list= ，这样会比 keybinding.el 的情况更简单一些。下面是 =require-extensions= 函数。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun require-extensions (action lst)
+  ""
+  (mapcar (lambda(ext) "" (funcall action ext)) lst))
+</pre>
+#+END_HTML
+
+有了这个函数，我们就可以进行非常简单的工作了——删掉 =require= ，换成 =list= 。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(require-extensions 'require
+ (list 
+  'tabbar 
+  'switch-window
+  'thing-edit
+  'second-sel
+  'browse-kill-ring+
+  'bbdb
+  'gnuplot
+  'muse-mode
+  'ibuffer
+  'w3m-load
+  'rect-mark
+  'ido
+  'multi-term
+  'lusty-explorer
+  'oddmuse
+  'emaci
+  'move-text
+  'uniquify
+  'hide-region
+))
+</pre>
+#+END_HTML
+
+至于每一个扩展的个别配置，就分别写在文件的后面了。 
+
+可以看到，我用的扩展并不多。因为每天工作当中基本就在 =shell-mode= ， =sh-mode= 和 =org-mode= 这几个模式当中打转转。下班之后大概是用 =emacs-lisp-mode= 。
+
+*** outline-minor-mode
+
+在这里比较值得一提的还有一个 =outline-minor-mode= 的设置。这个模式实在是一个很有用的东西。甚至在 =shell-mode= 里面我都会打开它。但是针对每一个不同的 mode 设置各自的 =outline-regexp= ， 对，我是想说是挺烦人的。也许你们要比我 nice，好让人羡慕啊。 好，言归正传，我选择写一个函数来搞定它。我叫它 =set-outline-minor-mode-regexp= 。 只是，这次，事情稍微有点复杂。
+
+首先这个函数的环境比较特殊，所以相对来说就会比较复杂。因为他是用在 =add-hook= 函数当中的，这意味着我没有机会直接传递我要的数据给 =set-outline-minor-mode-regexp= 。我需要绕一下，用一个全局变量 =outline-minor-mode-list= 来存储数据，并且这次的数据会是一个二维的 =list= ，所以处理也会复杂一些。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq outline-minor-mode-list 
+      (list '(emacs-lisp-mode "(defun")
+	    '(shell-mode ".*[bB]ash.*[#\$] ")
+	    '(sh-mode "function")
+
+ ))
+</pre>
+#+END_HTML
+
+这里就是我说的这个函数，也许你们可以帮我把它写的更简单一些。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun set-outline-minor-mode-regexp ()
+  ""
+  (outline-minor-mode 1)
+  (let ((regexp-list (append outline-minor-mode-list nil))
+	(find-regexp
+	 (lambda (lst)
+	   ""
+	   (let ((innerList (car lst)))
+	     (if innerList
+		 (if (string= (car innerList) major-mode)
+		     (car (cdr innerList))
+		   (progn (pop lst)
+			  (funcall find-regexp lst))))
+	     ))))
+	     (make-local-variable 'outline-regexp)
+	     (setq outline-regexp (funcall find-regexp regexp-list)))
+	
+  (set-key-bindings 'local-set-key
+		    (list
+		     (list (kbd "C-c C-t") 'hide-body)
+		     (list (kbd "C-c C-a") 'show-all)
+		     (list (kbd "C-c C-e") 'show-entry)
+;		     (kbd "C-c C-d") 和 shell-mode 冲突，所以继续沿用 C-c @ C-d，不做自定义
+		     ))
+)
+</pre>
+#+END_HTML
+
+然后针对每一个需要的模式添加 hook就行了。
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+ (add-hook 'shell-mode-hook 'set-outline-minor-mode-regexp t)
+ (add-hook 'sh-mode-hook 'set-outline-minor-mode-regexp t)
+ (add-hook 'emacs-lisp-mode-hook 'set-outline-minor-mode-regexp  t)
+
+</pre>
+#+END_HTML
+
+
+最后在 函数里面还要提到的一点是 =(make-local-variable 'outline-regexp)= 。我在这里显式的把 =outline-regexp= 作成 buffer local 了。如果不这样做的话， =sh-mode= 中的 =outline-regexp= 赋值会很诡异的覆盖掉 =shell-mode= 里面的值。虽然我还不太清楚为什么在别的 mode 里面就没有问题。灵异中……
+
+*** org-mode.el
+
+最后是 =org-mode.el= ， 我不知道再提到这个文件是不是还有必要。因为这里在没有什么神奇的地方了。这里只是一些关于 =org-mode= 的一些设置， 还有……一些 skeleton 定义。因为基本上 =org-mode= 的默认设置就已经蛮好用了（我用的是 7.01h 版），所以现在这个文件内的内容基本上就是 skeleton 定义。只是因为他们还没有变得足够多，所以我还没有把它们分成一个单独的文件来管理。那么就说说 skeleton 吧。最近比较常用的 skeleton 主要是以下这些：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(define-skeleton iexp 
+  "Input #+BEGIN_EXAMPLE #+END_EXAMPLE in org-mode"
+""
+"#+BEGIN_EXAMPLE\n"
+ _ "\n" 
+"#+END_EXAMPLE"
+)
+
+(define-skeleton isrc 
+  "Input #+begin_src #+end_src in org-mode"
+""
+"#+begin_src lisp \n"
+ _ "\n" 
+"#+end_src"
+)
+
+(define-skeleton iprop 
+  "Input :PROPERTIES: :END: in org-mode"
+""
+":PROPERTIES:\n"
+ _ "\n" 
+":END:"
+)
+
+(define-skeleton insert-emacser-code
+  ""
+  ""
+  "#+BEGIN_HTML\n"
+"<pre lang=\"lisp\" line=\"1\">\n"
+ _"\n"
+"</pre>\n"
+"#+END_HTML\n"
+)
+
+(define-abbrev org-mode-abbrev-table "iexp" "" 'iexp)
+(define-abbrev org-mode-abbrev-table "isrc" "" 'isrc)
+(define-abbrev org-mode-abbrev-table "iprop" "" 'iprop)
+(define-abbrev org-mode-abbrev-table "ihtml"  "" 'insert-emacser-code)
+
+</pre>
+#+END_HTML
+
+很容易看出来，有了这些东西以后，在写 =org= 文档的时候会很方便。并且，为了能够对已经存在的代码添加 =#+BEGIN_EXAMPLE= =#+begin_src= 等等定义，我还编写了几个扩展函数：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun i-babel-quote (beg end str1 str2)
+  (goto-char end)
+  (forward-line 1)
+  (insert str2)
+  (newline)
+  (goto-char beg)
+  (forward-line -1)
+  (newline)
+  (insert str1)
+)
+
+(defun iexp (St Ed)
+  " "
+  (interactive "r")
+  (let ((beg St) (end Ed))
+    (message "%s %s" beg end)
+    (i-babel-quote beg end "#+BEGIN_EXAMPLE" "#+END_EXAMPLE")))
+
+(defun isrc (St Ed)
+  " "
+  (interactive "r")
+  (let ((beg St) (end Ed))
+    (message "%s %s" beg end)
+    (i-babel-quote beg end "#+begin_src " "#+end_src")))
+(defun i= (St Ed)
+  ""
+  (interactive "r")
+  (let ((beg St) (end Ed))
+    (goto-char end)
+    (insert "=")
+    (goto-char beg)
+    (insert "=")
+    (goto-char (+ end 2)))
+)
+    
+</pre>
+#+END_HTML
+
+最后呢，我把一些 Shell当中比较常用的命令也定义成了 skeleton 。之所以不在 Shell profile 当中定义它，一方面是因为在我的工作中每天都要接触到大量的 Unix/Linux机器，放在 Emacs 里面的话呢，所有的命令都只需要定义一次，就可以在任意一个机器上使用。另外一方面呢，就是 skeleton，包括 abbrev 都是 Emacs 内部的东西，也就是说他们只会把定义的命令扩展开来，而并不会直接的去执行他，只有当我看到扩展结果并且按下回车，comint.el才会把相应的命令转交给 shell process 去执行，这在很多时候要比 shell 本身的 alias 和 function 机制安全的多的多。以下是一些示例：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(define-skeleton kill-multiple-proces
+  "Build killing multiple process command list"
+  ""
+  "ps -ef | grep -i " _ " | awk '{ print \"kill -9 \" $2 }'"
+)
+
+(define-abbrev shell-mode-abbrev-table "killps" "" 'kill-multiple-proces)
+
+(define-skeleton gunzip-tar
+  "unzip .tar.gz package in where -z is not available"
+  ""
+  "gunzip -cd " _ " | tar -xf - "
+)
+
+(define-skeleton def_listener 
+  "Define a listener in a WMQ QMgr"
+  ""
+  "DEF LISTENER(LST) TRPTYPE(TCP) PORT(" _ ") CONTROL(QMGR)\n"
+)
+
+(define-abbrev shell-mode-abbrev-table "deflst" "" 'def_listener)
+
+(define-skeleton def_clusrcvr
+  "Define a Cluster Receiver Channel in a WMQ QMgr"
+  ""
+  "DEF CHL(TO.QMCOD.4.FTECA) CHLTYPE(CLUSRCVR) CONNAME('" _ "') CLUSTER(FTECA)\n"
+)
+
+(define-abbrev shell-mode-abbrev-table "defclusrcvr" "" 'def_clusrcvr)
+
+</pre>
+#+END_HTML
+
+对于很多更简单的命令，直接就定义在 abbrev 里面了。
+
+*** dove-ext.el
+
+最后的最后，是 =dove-ext.el= 。这个文件的内容都是我自己编写的各种扩展函数。包括上面提到的部分和更多还没有被提到的。 你可以到 [[http://www.emacswiki.org/emacs/DavidYoung][EmacsWiki]] 上去浏览这些函数。

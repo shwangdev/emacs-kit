@@ -1,0 +1,146 @@
+# -*- org -*-
+
+#+TITLE: Emacs补全利器：auto-complete+gccsense
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: </span><a href="http://emacser.com/about.htm#crackcell" target="_blank"><span style="color: #0000ff;"><b>Menglong Tan</b></span></a>
+#+END_HTML
+
+** 前言
+   搜索引擎上关于emacs代码补全的文章一大堆，大多讲的是cedet、semantic、ctags之类的。我自己也尝试过一些“主流”的组合，奈何都不来感啊。用得最长的也就auto-complete了，但是用的也仅仅是它自带的buffer内内容的补全，基本不涉及语义的补全。偶然发现了gccsense这个东西，简单配置了下，比较满意。有图有真相
+
+#+HTML: <!--more-->
+
+   #+BEGIN_HTML
+   [caption width="150" caption="Emacs gccsense"]<a href="screenshots/emacs-gccsense.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_emacs-gccsense.jpg" height="150"/></a>[/caption]
+   #+END_HTML
+   我绑定的补全键到M+/，这样，遇到要补全的地方，按下M+/就出现了补全菜单，旁边是提示。
+
+** 简介
+   auto-complete提供一个补全的前端，通过不同的后端，支持ctags等。
+   gccsense是补全的后端，能提供符合语义的补全。因为它是直接利用gcc的代码，使用了编译器内在的分析器。它是一个独立的程序，目前通过插件可以被用到emacs和vim的补全上。因为是用的gcc的代码，理论上可以补全所有gcc支持的语言。
+   auto-complete和gccsense是一家出的。
+
+** 安装
+*** 配置auto-complete
+    下载：[[http://cx4a.org/software/auto-complete/]]
+    配置.emacs，我的auto-complete在/mydoc/lib/emacs-plugins/下
+#+BEGIN_HTML
+<pre lang="lisp">
+; auto complete
+(add-to-list 'load-path "/mydoc/lib/emacs-plugins/auto-complete")  
+(require 'auto-complete-config)  
+(add-to-list 'ac-dictionary-directories "/mydoc/lib/emacs-plugins/auto-complete/ac-dict")  
+(ac-config-default) 
+</pre>
+#+END_HTML
+
+*** 配置gcc-code-assist
+    gcc-code-assist就是在gcc代码基础上改的，主要用来从代码中提取补全信息
+    1. 下载：[[http://cx4a.org/software/gccsense/#Downloads]]
+	   编译安装之前，准备好环境，debian系统如下：
+#+BEGIN_HTML
+<pre lang="bash">
+sudo apt-get install build-essential libgmp3-dev libmpfr-dev flex ruby rubygems libsqlite3-ruby 
+</pre>
+#+END_HTML
+	  其它系统，如freebsd、macos请自行参考用户手册。
+    2. 配置安装：
+#+BEGIN_HTML
+<pre lang="bash">
+$ tar xvjf gcc-code-assist-*.tar.bz2  
+$ cd gcc-code-assist-*  
+$ ./configure --program-suffix=-code-assist --enable-languages=c,c++ --disable-bootstrap --disable-multilib  
+$ make # -j2  
+$ sudo make install
+</pre>
+#+END_HTML
+	  安装成功之后执行下，如果有正常输出，就说明安装成功：
+#+BEGIN_HTML
+<pre lang="bash">
+$ gcc-code-assist --version  
+$ g++-code-assist --version  
+</pre>
+#+END_HTML
+
+*** 安装配置gccsense
+    gccsense这个包包含一些辅助函数，以及编辑器的插件
+    1. 解压缩之后，执行：
+#+BEGIN_HTML
+<pre lang="bash">
+$ cd gccsense-*
+$ sudo cp bin/* /usr/local/bin/
+</pre>
+#+END_HTML
+    2. 执行一下命令，确保安装成功：
+#+BEGIN_HTML
+<pre lang="bash">
+$ gccrec --version 
+$ autopch --version
+</pre>
+#+END_HTML
+    3. emacs的插件文件为etc/gccsense.el，放到插件目录然后，在.emacs里面加入
+#+BEGIN_HTML
+<pre lang="lisp">
+(require 'gccsense)
+</pre>
+#+END_HTML 
+	   即可。
+	   由于我的gccsense.el放到了。/mydoc/lib/emacs-plugins/c下，并且把auto-complete的补全命令绑定到了M+/上，所以这部分配置如下：
+#+BEGIN_HTML
+<pre lang="lisp">
+(add-to-list 'load-path "/mydoc/lib/emacs-plugins/c")  
+(require 'gccsense)  
+(global-set-key "\257" (quote ac-complete-gccsense))  	  
+</pre>
+#+END_HTML 
+	   ok，搞定。
+
+** 主要模块介绍
+   在介绍使用前，简单介绍下几个主要模块的作用
+   - gcc-code-assist
+	 gcc4.4代码基础上改的那位，用来从被补全代码中分析出补全信息
+   - gccrec
+	 编译一个文件，往往要加上编译参数的，比如自定义的include地址。但是编辑器在补全的时候，是不知道这些的，硬生生地调用gcc-code-assist来“模拟编译”，参数补全造成的错误会扰乱补全信息的获取。
+	 gccrec就是为了解决这个问题，在使用编辑器补全之前，需要执行一次gccrec，它会将编译参数信息存到~/.gccrec这个sqlite3的数据库中。具体用法参见下一节的示例。
+   - autopch
+	 用来启用预编译头，来提高速度。
+	 autopch的相关部分请各位看官自行参考用户手册吧，后面的示例代码简单，不需要这个东西。
+
+** 实例
+   1. 准备一个测试cpp文件，test.cpp：
+#+BEGIN_HTML
+<pre lang="lisp">
+#include <string>  
+using namespace std;  
+int main()  
+{  
+    string s;
+}
+</pre>
+#+END_HTML 
+   2. 使用gccrec记录编译命令
+#+BEGIN_HTML
+<pre lang="bash">
+gccrec g++-code-assist test.cpp
+</pre>
+#+END_HTML 
+ 	  这里可以认为g++-code-assist就是g++，参数一样的，比如-I -l之类的。
+   3. 用emacs打开test.cpp，享受补全吧
+	  在string s;后面接着输入s.，然后按M-x ac-complete-gccsense，就可以利用auto-complete和它的gccsense后端来补全了。 
+
+** 附录
+   这里贴上我的emacs相关部分的配置文件。
+   我把补全的命令绑定到了M-/上面，
+   gccsense.el放到了/mydoc/lib/emacs-plugins/c/下面，所以这样写：
+#+BEGIN_HTML
+<pre lang="lisp">
+(add-to-list 'load-path "/mydoc/lib/emacs-plugins/c")  
+(require 'gccsense)  
+(global-set-key "\257" (quote ac-complete-gccsense))
+</pre>
+#+END_HTML
+
+** 参考
+   gccsense用户手册，[[http://cx4a.org/software/gccsense/manual.html]]

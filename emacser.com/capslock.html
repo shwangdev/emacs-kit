@@ -1,0 +1,48 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-22 14:16:30 Thursday by ahei" -->
+
+前阵子，无意中在网上发现一篇文章<a href="http://blog.csdn.net/delphinew/archive/2008/01/19/2053676.aspx" target="_blank">Effective Emacs中文版</a>，第一条就是说把Caps-Lock和Control键互换，作者是这样说的：<!--more-->
+<pre lang="text" line="1">
+条款1：把Caps-Lock和Control键互换！
+
+在Windows和苹果Mac键盘上，那个Ctrl键居然被远远地放在左下角，而Ctrl对于emacs的使用却是时时刻刻都很重要的，
+如果你不把Ctrl放到一个更舒服的位置，你就很难成一个emacs艺术大师了。这位置应该与你的基本手位处于同一行，
+那么，Caps Lock是最佳选择。在很多unix工作站上，这个位置放的就是Ctrl键，原因同上。
+</pre>
+我觉得说的挺有道理的，于是乎，赶紧照着说明把caps lock键和右ctrl键交换过来了，右ctrl键使用的更少，你还可以把caps lock键和右ctrl键旁边的那个右键菜单键，那个键使用的更不频繁。交换方法如下：(以下方法是交换caps lock键和左ctrl键)
+<pre lang="text" line="1">
+要想在w2000或者XP中实现这个互换，需要修改注册表。从开始菜单中选择“运行”，输入regedit。在左边的树状视图中，找到：
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Keyboard Layout
+点击 KeyboardLayout 项，使之获得焦点。再从“编辑”菜单中选择新建一个二进制值，命名为 "Scancode Map"，它的类型应该显示为 REG_BINARY。
+然后选择这个新建的"Scancode Map"值项，用“编辑”菜单中选择修改二进制值，在二进制编辑对话框中，输入下列数据：
+ 0000: 00 00 00 00 00 00 00 00
+ 0008: 03 00 00 00 3A 00 1D 00
+ 0010: 1D 00 3A 00 00 00 00 00
+
+选择OK关闭对话框，退出注册表编辑器，注销后重登入，你的caps和ctrl键应该就互换成功了。也可能要重启一次。
+
+在linux的X-Window中，可以使用xmodmap工具。在你的主目录新建一个名字为.xmodmap的文件，如果已经存在则只需修改。向该文件加入下列内容：
+ !
+ ! Swap Caps_Lock and Control_L
+ !
+ remove Lock = Caps_Lock
+ remove Control = Control_L
+ keysym Control_L = Caps_Lock
+ keysym Caps_Lock = Control_L
+ add Lock = Caps_Lock
+ add Control = Control_L
+保存，再向你的 /etc/rc.local 文件加入一行：
+xmodmap ~/.xmodmap 2>/dev/null
+
+在Mac OS X（Panther或Jaguar）中，你得安装一个修改过的键盘驱动，这说来有些吓人，但是很有效。
+这儿有个关于驱动的讨论：
+http://www.macosxhints.com/article.php?story=20031102032521826
+如果你用的不是Mac笔记本，好像有一个XML文件可以编辑来实现，可以参考这儿：
+http://www.eecs.wsu.edu/%7Eschneidj/mac-os-x-10.3.html#swap
+下面的URL有一条关于在其它系统上实现的信息：
+http://www.manicai.net/comp/swap-caps-ctrl.html
+</pre>
+windows用户还可以去<a href="http://xbeta.info/key-tweak-remap.htm" target="_blank">这里</a>看看一些比较好用交换按键的软件, 使用极其简单. 
+
+刚开始的时候特别不习惯，因为要用左小拇指来按那个caps lock键，而左小拇指不太容易用力，其中比较难按的键有Ctrl+A，Ctrl+S，Ctrl+Q，Ctrl+Z，主要是那些与caps lock键离的很近的键，不过天将降大任于斯人也，必先苦其心志阿，我经过几天的折磨我的左小拇指，终于能非常熟练的把caps lock键当ctrl键使了，确实方便多了，敲caps lock键的时候，手根本不需要离开键盘区域，特别方便，我现在到别人的机器上，去按Ctrl键，感觉好不习惯，明显觉得Ctrl键比caps lock键难按多了，:)当然, 并不是只有用emacs才需要交换这两个键, 不用emacs的话当然也可以交换, 毕竟快捷键基本上都是以Ctrl键开头的.

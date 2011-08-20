@@ -1,0 +1,71 @@
+#+OPTIONS: ^:nil author:nil timestamp:nil creator:nil
+
+自定义Emacs工具栏
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: </span><a href="http://emacser.com/about.htm#meteor" target="_blank"><span style="color:#0000ff;"><b>Meteor Liu</b></span></a>
+#+END_HTML
+
+前几天，emacs@newsmth上jcjbrian发了张他用emacs开发c++的[[http://www.newsmth.net/bbscon.php?bid=573&id=88480][截图]]，对他的工具栏挺感兴趣，所以向他请教了一下，同时也阅读了相关的info，在我的emacs上加了些自定义的工具栏（下图），在这记录一下以备忘。
+#+HTML: <!--more-->
+
+#+BEGIN_HTML
+<img src="screenshots/emacs-custom-toolbar.png" alt="自定义Emacs工具栏"/>
+#+END_HTML
+
+emacs的工具栏配置都存放在tool-bar-map这个keymap里，这个keymap跟我们平时用于键绑定的keymap是一样的[fn:1]，emacs会根据tool-bar-map的内容自动生成工具栏，如果执行一下下面这段代码，工具栏就没了：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(setq tool-bar-map (make-sparse-keymap))
+</pre>
+#+END_HTML
+
+要自定义工具栏，只需要修改tool-bar-map这个变量就可以了，一般我们可以用tool-bar-add-item这个函数来往tool-bar-map里添加工具项。
+
+tool-bar-add-item的原型是这样的：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(tool-bar-add-item icon def key &rest props)
+</pre>
+#+END_HTML
+
+参数icon设置工具图标，emacs的工具栏可以使用XPM和PBM格式的图标，当emacs 有libxmp支持时会使用XPM格式，没有libxmp库时会寻找PBM格式的图标(Info上还说有XBM格式，我没搞清楚什么情况下使用XBM)。
+
+在etc/images目录下可以看到emacs自带的图标一般都同时有XPM和PBM两种格式，就是为了在没有libxmp库时也能显示工具栏，因为如果我们只有xpm格式的图标而没有libxmp库时，emacs就不在工具栏上显示这个项了。所以我们自己做图标时最好XPM和PBM都准备一份。
+
+icon参数的类型是字符串，只需要传主文件名就可以，扩展名emacs会自己加，比如对图标文件semantic.xpm写成"semantic"。
+
+emacs会在image-load-path下查找图标文件，这个变量的值默认为(".../etc/images/" data-directory load-path)，就是说它除了查找image目录外还会查找所有的load-path，所以如果我们有自己的图标目录，把它加到image-load-path或者load-path都可以。
+
+图标的大小好像没有限制，emacs本身使用的图标是24x24像素的，如果使用了比它大的图标，整个工具栏会自动扩大。
+
+参数def设置这个工具项被按下的执行什么命令，它的格式跟global-set-key里的command格式是一样的。
+
+参数key用来给这个工具项指定一个key，这个key用于唯一标识这个工具项，所以在同一个keymap里key不能重复。
+
+剩下的参数可以设置一些属性项，具体可以设置哪些属性可以看Info > elisp > Keymaps > Menu Keymaps > Defining Menus > Extended Menu Items。常用的几个属性有：
+
++ :enable 这个属性的值是一个表达式，emacs对这个表达式求值，如果值为nil时，这个工具项会被禁用。
+
++ :visible 这个属性控制这个工具项是否显示，它的类型与:enable是一样的。
+
++ :help 这个属性类型是字符串，当鼠标在工具项上停留时会显示这个字符串。
+
+其余的属性我没用过，也没仔细研究它们用来干什么。
+
+举例来说，如果要添加一个工具项用来执行gdb命令，并且只有在c-mode或者c++-mode时才让它有效，可以这样：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(tool-bar-add-item "gud/run" 'gdb 'gdb
+                   :enable '(memq major-mode '(c++-mode c-mode)))
+</pre>
+#+END_HTML
+
+这样会把gdb这个工具项添加到默认工具栏的最后，如果不想要emacs默认的工具栏，可以先执行(setq tool-bar-map (make-sparse-keymap))把默认的工具栏清空。
+
+我的toolbar配置文件在：http://github.com/meteor1113/dotemacs/blob/master/init-toolbar.el
+
+[fn:1] 我读了半天info才明白，emacs的toolbar, menu和平时用global-set-key设置的按键绑定都是相通的，在emacs里，这些通通都保存在keymap里，只是menu和toolbar会多出一些属性设置。关于这些内容可以看看Info > elisp > Keymaps 以及下面的Menu Keymaps。

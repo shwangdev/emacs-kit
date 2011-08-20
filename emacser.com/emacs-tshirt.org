@@ -1,0 +1,12 @@
+# -*- org -*-
+
+# Time-stamp: <2010-05-29 11:55:12 Saturday by ahei>
+
+#+OPTIONS: ^nil author:nil timestamp:nil creator:nil toc:nil
+
+# 资讯, 初级
+
+Emacs版衫
+
+需要Emacs T-shirt的同志快去水木Emacs版去[[http://www.newsmth.net/bbscon.php?bid=573&id=88600&ftype=11][预定]]和[[http://www.newsmth.net/bbscon.php?bid=573&id=88753&ftype=11][投票]]啊!
+#+HTML: <!--more-->

@@ -1,0 +1,140 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-09-04 16:59:55 Saturday by taoshanwen" -->
+
+<!-- Emacs才是世界上最强大的IDE － 用Emaci阅读文件 -->
+<!-- 强大的文件阅读器 － Emaci -->
+
+<!-- IDE, 初级 -->
+
+相信有很多人平时要阅读大量文件, 而且阅读文件比编辑文件的时间要多的多, 在Emacs里编辑文件的时候, 阅读文件很不方便, 只能用C-v M-v上下滚屏. Emacs下有个view-mode专门是为阅读文件而准备的, 在view-mode里, u向上滚半屏, d向下滚半屏, SPC向下滚一屏, 阅读文件方便多了, 但是还不够, 为什么? 因为经常在阅读文件的时候, 你看到什么不对的地方需要修改, 而在view-mode下, 文件是只读的, 而且有时候, 你在编辑文件的时候, 也需要阅读文件, 那么这两种情况下, 你都要不停的切换view-mode, 非常的不方便, 而且在view-mode里面上下左右移动还得用C-n, C-p, C-f, C-b, 也是非常的不方便, 还有前进一个单词M-f, 后退一个单词M-b, 操作起来都还是很麻烦.<!--more-->
+
+大家都知道vi, 它的快捷键是出名的短, 在vi的命令模式, 上下左右以字符前进是hjkl, 是vi最著名的地方了, 非常方便, 还有它的以单词前进和后退的快捷键w, b, e, 还有好多类似移动光标的命令, 都非常的方便. Emacs下有好多模拟vi的插件, vi-mode就是一个, 它是Emacs内置的, 它模拟了好多vi的特性, 简单的光标移动命令更是当然支持了. 用它来阅读文件的话, 也是不错的, 但是还是有两方面缺点, 一是在vi-mode下好多下, 好多Emacs本身的快捷键就用不了, 比如C-a, C-y等, 二是vi本身固有的缺点(个人观点), 那就是虽然那些快捷键比较短, 但是基本上要在命令模式下运行, 想想, 当你在编辑文件的时候, 想要上下左右移动光标, 然后继续编辑, 再来个上下半屏移动光标, 再来个编辑, 然后再搜索某个单词, 再来个编辑, 就得不停的在编辑模式和命令模式来回切换, 个人觉得非常的不方便, 所以用vi-mode来阅读文件也不是最理想的选择.
+
+鉴于以上理由, 个人自己写了个minor mode, 结合Emacs的优点和部分vi的优点, 所以它的名字Emaci就是由EMACs和vI组成, Emacs占了四个字符, vi却只占了1个字符, 因为Emaci偏向于Emacs的功能更多. 
+
+安装好Emaci(只要(require 'emaci))后, M-x emaci-mode (我把它绑定到了M-s上, 非常方便)进入emaci-mode. 由于大部分情况下打开一个文件浏览的情况比较多, 所以我写了一个函数emaci-exist-file, 这个函数的作用就是判断当前文件是否存在, 存在的话就自动打开emaci-mode, 我把这个函数加到了find-file-hook里面, 这样当你打开一个文件的时候就自动进入了emaci-mode, 打开新文件则不会进入emaci-mode.
+
+进入emaci-mode后, 和vi类似, hjkl上下左右以字符单位移动光标, f, b前进和后退一个单词, I回到行首并且退出emaci-mode, A回到行尾并且退出emaci-mode. 和view-mode类似, u向上滚半屏, SPC向下滚半屏, w向上滚一屏, d向下滚一屏, &lt;和&gt;回到buffer头和buffer尾, 这个也和view-mode一样. g也是回到buffer头, J和K则是向下和向上移动7行, B执行eval-buffer, 1最大化当前window, 2把当前buffer垂直分成两半，3把当前buffer水平非常两半，q退出emaci-mode. 我的配置里，当安装了<a href="highlight-symbol.htm" target="_blank">highlight-symbol</a>后，n向前搜索当前光标处的下一个单词，p则向后搜索，非常方便。这样配置：
+<pre lang="lisp" line="1">
+(defun highlight-symbol-settings-for-emaci ()
+  "`highlight-symbol' settings for `emaci'."
+  (eval-when-compile (require 'cl))
+  
+;;;###autoload
+  (defun emaci-n ()
+    "Command bind to key n."
+    (interactive)
+    (if (edebug-active)
+        (edebug-next-mode)
+      (if (equal major-mode 'gud-mode)
+          (call-interactively 'gud-next)
+            (call-interactively 'highlight-symbol-next))))
+
+  (define-key-list
+    emaci-mode-map
+    `(("p" highlight-symbol-prev))))
+
+(eval-after-load "emaci"
+  `(highlight-symbol-settings-for-emaci))
+</pre>
+
+与vi和view-mode相比最大的差异的地方也是我觉得最方便的地方, 是在emaci-mode下也可以进行一些编辑工作, 比如你在浏览某个文件的时候, 发现某一行不需要, 直接用C-k删除即可, 然后再用C-y复制一下刚才拷贝的东西, 当然同样, 可以删除一个区域, 一个单词, 一个字符, 删除字符还可以用vi中的x命令. 这些编辑操作都不需要你退出emaci-mode, 编辑完之后, 用C-x C-s保存即可. 只有当你需要敲一堆文字的时候, 因为可能会涉及到jkhl等快捷键, 这时候才需要用q退出emaci-mode. 这时候你就想了, 那是不是每次编辑之前还要看一下当前是否开了emaci-mode, 那岂不是非常麻烦? 不用担心, 开启了emaci-mode后, mode-line上会显示一个非常显眼的"Emaci"样, 我特地用白底红字标示出来, 就像这样:
+[caption width="586" caption="Emaci的mode-line标记"]<a href="screenshots/emaci.png" rel="lightbox"><img src="screenshots/emaci.png" width="964"/></a>[/caption]
+当然，这个颜色你也可以控制的，该颜色是由颜色变量emaci-mode-line-face来控制的。
+而且, 我一般把M-s绑定到了emaci-mode-on, M-S绑定到emaci-mode-off上面, 这样, 你想编辑的时候按下M-S, 浏览的时候按下M-s, 即使不用看那个白底红字的"Emaci"字样, 也不会出错的. 这点view-mode就不行, 它和其他的minor mode一样, 都是默认的颜色, 我一般开启了好多minor mode, 这样, 你想编辑的时候, 还得盯着mode-line看半天当前是否打开了view-mode. 
+
+emaci还对常用的一些mode, 比如view-mode(所以你如果不喜欢在emaci-mode里面能修改文件, 只想只读的阅读文件的话, 可以考虑view-mode, 它的配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/view-mode-settings.el" target="_blank">这里</a>), Man-mode, apropos, diff-mode, help-mode等定制了通用的hjkl等方便的快捷键, 这些是通过emaci-brief-key-defs变量来控制的, 这个变量是一个list, list的每一个元素是由两个元素构成的list, 第一个元素是快捷键, 快捷键的写法和kbd宏的参数一样, 第二个参数是该快捷键对应的命令, 这个变量默认值如下:
+<pre lang="lisp" line="1">
+(defcustom emaci-brief-key-defs
+  `(("h" backward-char)
+    ("l" forward-char)
+    ("j" next-line)
+    ("k" previous-line)
+    ("J" roll-down)
+    ("K" roll-up)
+    ("b" backward-word)
+    ("w" am-forward-word-or-to-word)
+    ("o" other-window)
+    ("G" end-of-buffer)
+    ("a" move-beginning-of-line)
+    ("e" move-end-of-line))
+  "Key pairs used bind in modes `emaci-maps-to-bind-brief-keys'.
+
+Each element of this variable is two-elements list, and first
+element is key like argument of `kbd', and second element is command."
+  :type 'list
+  :group 'emaci)
+</pre>
+而待绑定这些快捷键的keymap是由变量emaci-maps-to-bind-brief-keys控制的, 其默认值如下:
+<pre lang="lisp" line="1">
+(defcustom emaci-maps-to-bind-brief-keys
+  `(view-mode-map
+    Man-mode-map
+    apropos-mode-map
+    completion-list-mode-map
+    log-view-mode-map
+    compilation-mode-map
+    diff-mode-map
+    help-mode-map
+    ,(if (>= emacs-major-version 21) 'grep-mode-map)
+    color-theme-mode-map)
+  "List used for `emaci-bind-modes-keys'.
+
+Element of this list either a list whose first element is load file,
+and second element is map, or a string which means load file, or a map."
+  :group 'emaci)
+</pre>
+此变量是一个keymap的list, list中的元素是keymap或者是nil。
+如果你修改了以上两个变量后, 执行一下M-x emaci-bind-brief-keys使你的修改生效.
+
+Emaci的配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/emaci-settings.el" target="_blank">这里</a>，配置如下:
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2010-04-19 10:15:52 Monday by ahei>
+
+(require 'util)
+(require 'emaci)
+
+(apply-define-key
+ global-map
+ `(("M-s" emaci-mode-on)
+   ("M-S" emaci-mode-off)))
+
+(defun emaci-settings ()
+  "settings for `emaci'."
+  (eal-define-keys
+   'emaci-mode-map
+   `(("/" describe-symbol-at-point)
+     ("'" switch-to-other-buffer)
+     ("L" count-brf-lines)
+     ("t" sb-toggle-keep-buffer)
+     ("." find-symbol-at-point)
+     ("," find-symbol-go-back)
+     ("]" goto-paren)))
+
+  (setq emaci-brief-key-defs
+        (append emaci-brief-key-defs
+                `(("]" goto-paren))))
+  (emaci-bind-brief-keys)
+  
+  ;;;###autoload
+  (defun switch-major-mode-with-emaci ()
+    "Run `switch-major-mode' with `emaci-mode'."
+    (interactive)
+    (let ((emaci emaci-mode))
+      (call-interactively 'switch-major-mode)
+      (emaci-mode (if emaci 1 -1))))
+
+  (eal-define-keys-commonly
+   global-map
+   `(("C-x q" switch-major-mode-with-emaci))))
+
+(eval-after-load "emaci"
+  `(emaci-settings))
+
+(provide 'emaci-settings)
+</pre>
+
+听完我的介绍, 怎么样, 是不是你也一直期待这样的功能呢, 那赶快试试吧. 这里下载<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/emaci.el" target="_blank">Emaci</a>, Emaci还依赖<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/ahei-misc.el" target="_blank">ahei-misc</a>, <a href="eval-after-load.htm" target="_blank">eval-after-load</a>两个包，读者均可在<a href="http://code.google.com/p/dea" target="_blank">DEA</a>里面下载。

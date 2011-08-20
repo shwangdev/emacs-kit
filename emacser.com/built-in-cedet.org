@@ -1,0 +1,295 @@
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+# IDE, 自动补全, cedet, 中级
+
+用CEDET浏览和编辑C++代码(续) - 使用Emacs 23.2内置的CEDET
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: </span><a href="http://emacser.com/about.htm#meteor" target="_blank"><span style="color: #0000ff;"><b>Meteor Liu</b></span></a>
+
+<img class="alignright" title="CEDET" src="screenshots/cedet/cedet-logo.png" width="200" height="90"/>
+#+END_HTML
+
+** 前言
+
+今天，emacs-23.2发布了，最大的改变就是集成进了CEDET，所以有了这个续， 介绍下build in CEDET和offical CEDET的区别，以及内置CEDET缺少某些功能的替代方案。
+#+HTML: <!--more-->
+
+PS1：虽然现在官方release版本是1.0pre7，内置的CEDET用cedet-version命令看输入也是1.0pre7，可我总感觉内置的CEDET用起来比官方版本慢很多，我猜想内置的CEDET可能没升级到1.0pre7的release。
+
+PS2：内置CEDET不支持emacs-lisp语言了，没想明白是为什么。
+
+** semantic配置
+
+*** 基本配置
+
+官方的CEDET通过semantic-load-enable-minimum-features等几个函数来启动，而内置的CEDET增加了一个单独的minor mode，即semantic-mode，可以通过(semantic-mode)命令来Enable或Disable。
+
+(semantic-mode)是通过semantic-default-submodes这个变量来决定启用哪些minor mode，默认的semantic-default-submodes包含了下面两个minor mode：
+
+- global-semantic-idle-scheduler-mode
+- global-semanticdb-minor-mode
+
+根据(semantic-mode)的文档，semantic-default-submodes里可以设置下面这些minor mode：
+
+ - global-semanticdb-minor-mode
+ - global-semantic-idle-scheduler-mode
+ - global-semantic-idle-summary-mode
+ - global-semantic-idle-completions-mode
+ - global-semantic-decoration-mode
+ - global-semantic-highlight-func-mode
+ - global-semantic-stickyfunc-mode
+ - global-semantic-mru-bookmark-mode
+
+可以根据自己的需要设置，比如我开启了下面4个minor mode：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq semantic-default-submodes '(global-semantic-idle-scheduler-mode
+                                  global-semanticdb-minor-mode
+                                  global-semantic-idle-summary-mode
+                                  global-semantic-mru-bookmark-mode))
+(semantic-mode 1)
+</pre>
+#+END_HTML
+
+另外，emacs-23.2的Tools菜单下下新增了"Source Code Parsers (Semantic)"菜单项，可以通过这个菜单项来Enable和Disable semantic-mode，和命令(semantic-mode)的功能是一样的。
+
+此外，官方CEDET里还有其它一些minor mode，现在基本上都还可以用，比如我还打开了下面几个：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(global-semantic-highlight-edits-mode (if window-system 1 -1))
+(global-semantic-show-unmatched-syntax-mode 1)
+(global-semantic-show-parser-state-mode 1)
+</pre>
+#+END_HTML
+
+关于system-include-dir的设置，还和以前一样：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defconst user-include-dirs
+  (list ".." "../include" "../inc" "../common" "../public"
+        "../.." "../../include" "../../inc" "../../common" "../../public"))
+(defconst win32-include-dirs
+  (list "C:/MinGW/include"
+        "C:/MinGW/include/c++/3.4.5"
+        "C:/MinGW/include/c++/3.4.5/mingw32"
+        "C:/MinGW/include/c++/3.4.5/backward"
+        "C:/MinGW/lib/gcc/mingw32/3.4.5/include"
+        "C:/Program Files/Microsoft Visual Studio/VC98/MFC/Include"))
+(let ((include-dirs user-include-dirs))
+  (when (eq system-type 'windows-nt)
+    (setq include-dirs (append include-dirs win32-include-dirs)))
+  (mapc (lambda (dir)
+          (semantic-add-system-include dir 'c++-mode)
+          (semantic-add-system-include dir 'c-mode))
+        include-dirs))
+</pre>
+#+END_HTML
+
+*** 代码跳转
+
+代码跳转和官方版本一样还是用semantic-ia-fast-jump命令，不过在emacs-23.2里直接用这个命令可能会报下面的错误：
+
+#+BEGIN_HTML
+<pre lang="text">
+semantic-ia--fast-jump-helper: Symbol's function definition is void: semantic-analyze-tag-references
+</pre>
+#+END_HTML
+
+这可能是emacs的bug，semantic-analyze-tag-references这个函数是定义在semantic/analyze/refs.el这个文件中的，而semantic/ia.el里写的是(eval-when-compile (require 'semantic/analyze/refs))，所以运行时这个feature没被load进来，我们需要自己load一下：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(require 'semantic/analyze/refs)
+</pre>
+#+END_HTML
+
+另外，官方CEDET里semantic-ia-fast-jump后可以通过命令semantic-mrub-switch-tags来回到曾经跳转过的地方，不过在emacs-23.2里会提示：
+
+#+BEGIN_EXAMPLE
+Semantic Bookmark ring is currently empty
+#+END_EXAMPLE
+
+这是因为semantic-ia-fast-jump会用函数push-mark把跳过的地方放到mark ring里去，官方CEDET通过定义push-mark的advice把它也放到了semantic-mru-bookmark-ring里去，semantic-mrub-switch-tags就是从semantic-mru-bookmark-ring来找位置的，但build in的CEDET里把push-mark的advice去掉了，所以semantic-mru-bookmark-ring总是空的，我的办法是把官方CEDET里对push-mark的device拷贝到我的.emacs中来：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defadvice push-mark (around semantic-mru-bookmark activate)
+  "Push a mark at LOCATION with NOMSG and ACTIVATE passed to `push-mark'.
+If `semantic-mru-bookmark-mode' is active, also push a tag onto
+the mru bookmark stack."
+  (semantic-mrub-push semantic-mru-bookmark-ring
+                      (point)
+                      'mark)
+  ad-do-it)
+</pre>
+#+END_HTML
+
+这样，我以前写的semantic-ia-fast-jump-back函数也能用了：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun semantic-ia-fast-jump-back ()
+  (interactive)
+  (if (ring-empty-p (oref semantic-mru-bookmark-ring ring))
+      (error "Semantic Bookmark ring is currently empty"))
+  (let* ((ring (oref semantic-mru-bookmark-ring ring))
+         (alist (semantic-mrub-ring-to-assoc-list ring))
+         (first (cdr (car alist))))
+    (if (semantic-equivalent-tag-p (oref first tag) (semantic-current-tag))
+        (setq first (cdr (car (cdr alist)))))
+    (semantic-mrub-switch-tags first)))
+</pre>
+#+END_HTML
+
+对这个函数需要说明一下：网友[[http://fangzhzh.blogs.mu/][fangzhzh]]提过可以用C-u C-space来跳回原来的mark，[[http://emacser.com/about.htm#ahei][ahei]]说可以用C-x C-x来跳回，可我测试这两个按键好像跳得都有点乱，不能和semantic-ia-fast-jump的位置对应。我估计是这两个key是跳回push-mark函数mark的位置，而push-mark不光CEDET用。我的需求是只跳回semantic-ia-fast-jump曾经到过的地方，所以仍然保留了这个函数。
+
+我的习惯还是绑定到F12上：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defun semantic-ia-fast-jump-or-back (&optional back)
+  (interactive "P")
+  (if back
+      (semantic-ia-fast-jump-back)
+    (semantic-ia-fast-jump (point))))
+(define-key semantic-mode-map [f12] 'semantic-ia-fast-jump-or-back)
+(define-key semantic-mode-map [C-f12] 'semantic-ia-fast-jump-or-back)
+(define-key semantic-mode-map [S-f12] 'semantic-ia-fast-jump-back)
+</pre>
+#+END_HTML
+
+这儿多出来个semantic-ia-fast-jump-or-back函数，是因为我有时候在putty里操作远程的emacs，putty里用不了S-f12这个key，所以我把f12绑定到semantic-ia-fast-jump-or-back上，这样我可以在putty里通过C-u f12来跳回。
+
+以前的semantic-analyze-proto-impl-toggle命令还能用：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(define-key semantic-mode-map [M-S-f12] 'semantic-analyze-proto-impl-toggle)
+</pre>
+#+END_HTML
+
+*** 代码补全
+
+官方版本里可以用命令semantic-ia-complete-symbol-menu弹出semantic的补全菜单，不过这个命令在内置的CEDET里不存在了(可能是因为emacs官方版本认为这个命令只在GUI下能用，不够通用吧)。
+
+不过，内置的CEDET倒是可以通过命令complete-symbol(默认绑定到ESC-TAB)在另一个buffer里显示可能补全的内容，像这样：
+
+#+BEGIN_HTML
+[caption width="150" caption="semantic的complete-symbol"]<a href="screenshots/cedet/emacs-semantic-complete-symbol.jpg" rel="lightbox"><img src="screenshots/cedet/thumbs/thumbs_emacs-semantic-complete-symbol.jpg" height="150"/></a>[/caption]
+#+END_HTML
+
+如果还希望能使用补全菜单，可以使用其它插件，比如auto-complete或company-mode：company-mode-0.5已经可以支持emacs内置的CEDET了；auto-complete-1.2对内置CEDET的支持还有些问题，关于如何配置auto-complete-1.2让它支持内置的CEDET，我准备另外写文章介绍。
+
+** EDE配置
+
+ede和官方版本没有区别，仍然用(global-ede-mode t)启用就行了；不过emacs-23.3的Tools菜单下新增了"Project support (EDE)"菜单项，可以完成global-ede-mode一样的功能。
+
+** 其它
+
+*** 可视化书签
+
+官方CEDET里的visual-studio-bookmarks在内置的CEDET里没有了，所以我现在使用[[http://www.nongnu.org/bm/][bm]]了。
+
+*** pulse
+
+pulse的功能在内置CEDET里还存在，不过官方CEDET里可以用pulse-toggle-integration-advice函数来切换pulse，在内置CEDET里这个函数消失了，现在的办法是设置pulse-command-advice-flag变量来切换：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(setq pulse-command-advice-flag (if window-system 1 nil))
+</pre>
+#+END_HTML
+
+另外，官方版本里对下面这些函数设置了pulse的device：
+
+- goto-line
+- exchange-point-and-mark
+- find-tag
+- tags-search
+- tags-loop-continue
+- pop-tag-mark
+- imenu-default-goto-function
+
+内置版本里这些device都没了，所以我直接把官方版本里的advice拷贝过来了：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defadvice goto-line (after pulse-advice activate)
+  "Cause the line that is `goto'd to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice exchange-point-and-mark (after pulse-advice activate)
+  "Cause the line that is `goto'd to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p)
+             (> (abs (- (point) (mark))) 400))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice find-tag (after pulse-advice activate)
+  "After going to a tag, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice tags-search (after pulse-advice activate)
+  "After going to a hit, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice tags-loop-continue (after pulse-advice activate)
+  "After going to a hit, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice pop-tag-mark (after pulse-advice activate)
+  "After going to a hit, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice imenu-default-goto-function (after pulse-advice activate)
+  "After going to a tag, pulse the line the cursor lands on."
+  (when pulse-command-advice-flag
+    (pulse-momentary-highlight-one-line (point))))
+</pre>
+#+END_HTML
+
+另外，我还喜欢对下面这些函数定义pulse：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defadvice cua-exchange-point-and-mark (after pulse-advice activate)
+  "Cause the line that is `goto'd to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p)
+             (> (abs (- (point) (mark))) 400))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice switch-to-buffer (after pulse-advice activate)
+  "After switch-to-buffer, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice previous-buffer (after pulse-advice activate)
+  "After previous-buffer, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice next-buffer (after pulse-advice activate)
+  "After next-buffer, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice ido-switch-buffer (after pulse-advice activate)
+  "After ido-switch-buffer, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+(defadvice beginning-of-buffer (after pulse-advice activate)
+  "After beginning-of-buffer, pulse the line the cursor lands on."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+</pre>
+#+END_HTML
+
+*** h/cpp切换
+
+官方CEDET里的eassist.el没有了，所以eassist-switch-h-cpp也没了，现在我用[[http://www.hendawi.com/emacs/sourcepair.el][sourcepair]]代替，sourcepair比eassist-switch-h-cpp更好用。
+
+*** 代码折叠
+
+semantic-tag-folding.el没有了，可我没找到其它更好的替代方案，所以我把官方CEDET里的semantic-tag-folding.el拷过来了，只需要把文件中(require 'semantic-decorate-mode)替换成(require 'semantic/decorate/mode)就能像以前一样用了。
+
+以前的senator-fold-tag功能还可以使用。
+
+最后插播个广告，我关于内置CEDET的配置(最后那部分)：http://github.com/meteor1113/dotemacs/blob/master/init-basic.el

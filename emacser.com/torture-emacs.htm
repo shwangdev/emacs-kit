@@ -1,0 +1,436 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-10-11 19:27:57 Monday by taoshanwen" -->
+
+<!-- 折腾Emacs -->
+
+<span style="color: #0000ff;">作者: </span><a href="http://blog.zhuoqiang.me/archives/torture-emacs/" target="_blank"><span style="color: #0000ff;"><b>小强</b></span></a>
+
+传说中神一样编辑器的Emacs向来以难学难用，喜欢折腾人著称。三天打渔两天晒网的我，居然心甘情愿地被它折腾了5，6年之久，期间苦乐不足为外人道也。<!--more-->
+
+<p>
+不过，以我的使用感觉，Emacs 更象是匹烈马：初时很难驾驭，可一旦征服，使用起来便得心应手，威力无穷。尽管被它折腾的不轻，但也因此学会了很多提高工作效率的小技巧。而在用 Emacs 编辑时更是可以做到心无旁骛，任由思路驰骋纵横在键盘间，达到一种所谓“流”的状态。
+</p>
+<p>
+虽说如此，长久以来，还是有很多小细节让自己在使用Emacs的时候很是不爽，最近一周稍有闲暇，本着磨刀不误砍柴工的精神，也来折腾了一下 Emacs，居然被我搞定了几个困扰已久的配置。整理记录一下，希望能帮到遇到同样问题的朋友们。
+</p>
+<h3>Emacs 中文字体配置</h3>
+<p>
+这是最让我恼火的配置之一，在 Emacs 23 以前，由于底层不是 Unicode ，经常会遇到中文乱码的问题。好在 Emacs 23 中底层统一用 Unicode 重新实现了，现在不会再有乱码的问题，可是字体的配置却很麻烦，网上有很多的例子和文档，但都或多或少有些问题，总是不能尽善尽美。
+</p>
+<p>
+最简单的字体设置方式是
+
+<pre lang="lisp">
+(set-default-font "-outline-Lucida Console-normal-normal-normal-mono-*-*-*-*-*-*-iso10646-1" 1)
+</pre>
+
+但它的问题是，该设置只对初始的窗口（ Frame ）有效，对于新窗口 (如speedbar，或用快捷键 Ctrl-x 5 2 分出来的窗口）无效。改成下面的设置方法，字体设置对初始窗口和后面的新窗口就都会生效了。
+
+<pre lang="lisp">
+(setq default-frame-alist (font . "Lucida Console 12"))
+</pre>
+
+还有个问题，就是对中英文混排文本的字体支持，简单的方法是使用同时包含中文和英文的字体。网上有好心人把中文和等宽英文字体合并为新的字体，方便编程使用。比如我以前配置里用的“微软雅黑Monaco”字体就很不错。
+
+<pre lang="lisp">
+(setq default-frame-alist (font . "微软雅黑Monaco 12"))
+</pre>
+
+这种方法的缺点在于，你没办法单独换英文字体或中文字体，只能新做一个字体整体换掉。另外，网上做的字体里面，并没有包含斜体，显示的时候不够丰富。
+</p>
+<p>
+其实 Emacs 本身支持根据字符编码去找合适的字体，不过需要按编码详细的设置，让 Emacs 明白遇到汉字编码要用宋体，而不是楷体或“Lucida Console”。
+
+<pre lang="lisp" line="1">
+(set-fontset-font
+    (frame-parameter nil 'font)
+    'han
+    (font-spec :family "Microsoft Yahei" :size 12))
+</pre>
+   
+除了 han 以外，还有 kana, symbol, cjk-misc, bopomofo 这些编码集也要一并设置好。可以用 elisp 的 dolist 做循环操作，减少不必要的复制粘贴
+
+<pre lang="lisp" line="1">
+(dolist (charset '(kana han symbol cjk-misc bopomofo))
+    (set-fontset-font (frame-parameter nil 'font)
+                      charset
+                      (font-spec :family "Microsoft Yahei" :size 12)))
+</pre>
+
+<b>切记不能图省事，直接把 unicode 字符编码集的字体设成中文</b>，这样的话，在 Windows 平台上，原来的英文字体设置就失效了
+
+还有一点，原来对英文字体的设置方法要改成下面这样才能和中文的配合，否则 Emacs 会忽略英文字体的设置 ( 起码在 Windows 平台上是这样 )，所以最终的版本是：
+
+<pre lang="lisp" line="1">
+;; Setting English Font
+(set-face-attribute
+  'default nil :font "Consolas 12")
+
+;; Chinese Font
+(dolist (charset '(kana han symbol cjk-misc bopomofo))
+    (set-fontset-font (frame-parameter nil 'font)
+                      charset
+                      (font-spec :family "Microsoft Yahei" :size 12)))
+</pre>
+
+</p>
+<p>
+字体的选择上，中文我比较喜欢微软雅黑字体，英文的字体我选择等宽字体方便编程。一般常使用 Monaco 或者 Consolas。Monaco 是那种一见倾心型的，字体设计的高挑修长，有种拉丁美人的性感。Consolas 是微软为新的 Visual Studio 专门打造的编程字体，虽然乍看没有 Monaco 那么精艳，可是相当耐看，如同小家碧玉，是个“居家过日子”的实用字体。听说 “DejaVu Sans Mono” 也不错，准备有时间试试看。
+</p>
+<p>
+到这里，基本上 Emacs 的字体设置算是能赶上其它的编辑器了。可是，做为神一般的编辑器，只是赶上其它编辑器这也太丢人。下面要挑战一下自我，让神器发挥它应有的威力：<b>如何能够根据用户的喜好和操作系统的字体库来做最符合用户心意的字体设定呢？</b>
+换言之，我想要的功能是：Emacs 你能不能做到，如果系统有雅黑字体，就请帮忙用雅黑，否则（如 Linux 系统上默认没有雅黑）就请用开源字体文泉驿微米黑。查了一下，网上没有现成的例子，只好挽起袖子，自己研究 elisp 编程动手写了一个设置字体的函数。</p>
+<p>
+首先，我们要能判断某个字体在系统中是否安装:
+
+<pre lang="lisp" line="1">
+(defun qiang-font-existsp (font)
+  (if (null (x-list-fonts font))
+      nil t))
+</pre>
+
+其次，要按顺序找到一个字体列表( list ) 中第一个已经安装可用的字体，下面是个例子
+
+<pre lang="lisp" line="1">
+(defvar font-list '("Microsoft Yahei" "文泉驿等宽微米黑" "黑体" "新宋体" "宋体"))
+(require 'cl) ;; find-if is in common list package
+(find-if #'qiang-font-existsp font-list)
+</pre>
+
+还要有个辅助函数，用来产生带上 font size 信息的 font 描述文本
+
+<pre lang="lisp" line="1">
+(defun qiang-make-font-string (font-name font-size)
+  (if (and (stringp font-size) 
+           (equal ":" (string (elt font-size 0))))
+      (format "%s%s" font-name font-size)
+    (format "%s %s" font-name font-size)))
+</pre>
+
+这里绕的地方是，如果传入的 font-size 是“:pixelsize=18”这样的话，字体名称和它之间不能有空格。如果是普通的数字的话（ 12或“12”)，需要有个空格分隔字体名称和字体大小。
+
+有了这些函数，下面出场的就是自动设置字体函数了:
+
+<pre lang="lisp" line="1">
+(defun qiang-set-font (english-fonts
+                       english-font-size
+                       chinese-fonts
+                       &optional chinese-font-size)
+  "english-font-size could be set to \":pixelsize=18\" or a integer.
+If set/leave chinese-font-size to nil, it will follow english-font-size"
+  (require 'cl)                         ; for find if
+  (let ((en-font (qiang-make-font-string
+                  (find-if #'qiang-font-existsp english-fonts)
+                  english-font-size))
+        (zh-font (font-spec :family (find-if #'qiang-font-existsp chinese-fonts)
+                            :size chinese-font-size)))
+
+    ;; Set the default English font
+    ;; 
+    ;; The following 2 method cannot make the font settig work in new frames.
+    ;; (set-default-font "Consolas:pixelsize=18")
+    ;; (add-to-list 'default-frame-alist '(font . "Consolas:pixelsize=18"))
+    ;; We have to use set-face-attribute
+    (message "Set English Font to %s" en-font)
+    (set-face-attribute
+     'default nil :font en-font)
+
+    ;; Set Chinese font 
+    ;; Do not use 'unicode charset, it will cause the english font setting invalid
+    (message "Set Chinese Font to %s" zh-font)
+    (dolist (charset '(kana han symbol cjk-misc bopomofo))
+      (set-fontset-font (frame-parameter nil 'font)
+                        charset
+                        zh-font))))
+ 
+</pre>
+
+利用这个函数，Emacs 字体设置就是小菜一碟了
+
+<pre lang="lisp" line="1">
+(qiang-set-font
+ '("Consolas" "Monaco" "DejaVu Sans Mono" "Monospace" "Courier New") ":pixelsize=18"
+ '("Microsoft Yahei" "文泉驿等宽微米黑" "黑体" "新宋体" "宋体"))
+</pre>
+
+这样设置，Emacs 会优先选用 Consolas + “雅黑”的组合。如果“雅黑”没有装的话，就使用“文泉驿等宽微米黑”，依此类推。这份字体配置不用改动就能在不同的操作系统字体环境下面使用，相信应该没有其它编辑器有这么变态的后备字体列表设置了吧。至此，Emacs 在字体设置这方面总算是“体面”地稍稍胜出了其它编辑器。把上面的三个函数加到配置文件 .emacs 里赶快看看效果吧。
+</p>
+
+<h3>Emacs 字体大小的调整</h3>
+<p>
+在用 Emacs 做演示或代码审查的时候，经常需要调整默认的字体大小，以前常常为了这个而手忙脚乱。最近才知道，原来 Emacs 默认就有快捷键支持动态调整字体大小：
+</p><ul>
+  <li>放大字体: Ctrl-x Ctrl-+ 或 Ctrl-x Ctrl-=</li>
+  <li>缩小字体: Ctrl-x Ctrl--</li>
+  <li>重置字体: Ctrl-x Ctrl-0</li>
+</ul>
+更酷的是，如果要放大或缩小多次，在第二次直接按 ＋，－，0 就可以了，比如，放大 3 次： Ctrl-x Ctrl-= = = 。另外，Shift + 鼠标左键 也能唤出调整字体大小的弹出菜单。
+<p></p>
+<p>
+不过，能不能象网络浏览器和最新版的 Visual Studio 2010 那样，用 Ctrl 加上鼠标滚轮操作来设置字体大小呢，毕竟大部分人已经习惯了这种方式了。既然是无所不能的 Emacs，那当然没问题了，把下面的配置加入 .emacs 里再试试看 :)
+<pre lang="lisp" line="1">
+;; For Linux
+(global-set-key (kbd "<C-mouse-4>") 'text-scale-increase)
+(global-set-key (kbd "<C-mouse-5>") 'text-scale-decrease)
+
+;; For Windows
+(global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
+(global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+</pre>
+</p>
+
+<h3>添加删除注释</h3>
+<p>
+写程序的，要经常和注释打交道，注释和反注释一段代码是家常便饭。可惜，Emacs 虽然有这个功能，默认的配置却并不好用：
+</p><ul>
+  <li>注释/反注释这两个功能默认没有绑定快捷键</li>
+  <li>需要先选中一段区域才能调用注释功能，哪怕只想注释/反注释当前行</li>
+  <li>好在有一个 Alt-; 的快捷键，默认绑定了 comment-dwim，能注释/反注释当前激活的区域。如果没有激活区域，就在当前行末加注释</li>
+</ul>
+其实 Alt-; 默认绑定的 comment-dwim 已经很理想了，可是，还是不够 dwim ( Do What I Mean )。能不能变成，如果没有激活的区域，就注释/反注释当前行，仅当在行尾的时候才在行尾加注释呢？下面的配置就是参考别人配置写的 “照我说的做”注释函数:
+
+<pre lang="lisp" line="1">
+(defun qiang-comment-dwim-line (&optional arg)
+  "Replacement for the comment-dwim command.
+If no region is selected and current line is not blank and we are not at the end of the line,
+then comment current line.
+Replaces default behaviour of comment-dwim, when it inserts comment at the end of the line."
+  (interactive "*P")
+  (comment-normalize-vars)
+  (if (and (not (region-active-p)) (not (looking-at "[ \t]*$")))
+      (comment-or-uncomment-region (line-beginning-position) (line-end-position))
+    (comment-dwim arg)))
+(global-set-key "\M-;" 'qiang-comment-dwim-line)
+</pre>
+
+这样一来，注释和反注释代码的操作只使用一个 Alt-; 键就全部搞定了，Emacs 会心领神会地“照我说的做”。
+<p></p>
+
+<h3>复制当前行</h3>
+<p>
+这是个经常要用到的操作，以前要么老老实实 Mark 当前行的行首和行尾，然后复制。整个按键流程是：
+</p><ol>
+  <li>Ctrl-a 光标到行首</li>
+  <li>Ctrl-Shift-Space 设置标记</li>
+  <li>Ctrl-e 光标到行尾。如此这一行就被选为激活的区域了</li>
+  <li>Alt-w 复制当前激活的区域</li>
+</ol>
+要么按我比较习惯的操作先剪切当前行，再撤消上一次的剪切操作
+<ol>
+  <li>Ctrl-a 光标到行首</li>
+  <li>Ctrl-k 剪切至行屋，该行消失</li>
+  <li>Ctrl-/ 撤消上一次的操作，该行重现</li>
+</ol>
+可以看到，方案二比方案一省一次按键，而且 Ctrl 键不用松开。不过，如此基本的操作要按三个键还是太麻烦了，而且方案二会让文件变成被编辑过的状态。其实，可以发挥一下“按我说的做”的精神。为什么不把 Alt-w 变的更聪明一些，当没有激活的区域时就复制当前的一整行呢？ 说做就做:
+</p>
+<pre lang="lisp" line="1">
+;; Smart copy, if no region active, it simply copy the current whole line
+(defadvice kill-line (before check-position activate)
+  (if (member major-mode
+              '(emacs-lisp-mode scheme-mode lisp-mode
+                                c-mode c++-mode objc-mode js-mode
+                                latex-mode plain-tex-mode))
+      (if (and (eolp) (not (bolp)))
+          (progn (forward-char 1)
+                 (just-one-space 0)
+                 (backward-char 1)))))
+
+(defadvice kill-ring-save (before slick-copy activate compile)
+  "When called interactively with no active region, copy a single line instead."
+  (interactive (if mark-active (list (region-beginning) (region-end))
+                 (message "Copied line")
+                 (list (line-beginning-position)
+                       (line-beginning-position 2)))))
+
+(defadvice kill-region (before slick-cut activate compile)
+  "When called interactively with no active region, kill a single line instead."
+  (interactive
+   (if mark-active (list (region-beginning) (region-end))
+     (list (line-beginning-position)
+           (line-beginning-position 2)))))
+
+;; Copy line from point to the end, exclude the line break
+(defun qiang-copy-line (arg)
+  "Copy lines (as many as prefix argument) in the kill ring"
+  (interactive "p")
+  (kill-ring-save (point)
+                  (line-end-position))
+                  ;; (line-beginning-position (+ 1 arg)))
+  (message "%d line%s copied" arg (if (= 1 arg) "" "s")))
+
+(global-set-key (kbd "M-k") 'qiang-copy-line)
+</pre>
+<p>
+上面还多加了一个配置，就是把 Alt-k 设成复制光标所在处到行尾。与 kill-line 的 Ctrl-k 对应。这样一来，如果是要拷贝一整行的话，只要将光标移动到该行任意位置，按下 Alt-w 就行了。如果是复制某个位置到行尾的文字的话，就把光标移到起始位置处，按 Alt-k 。比默认的操作简化了很多。
+</p>
+
+<h3>拷贝代码自动格式化</h3>
+<p>Emacs 里对代码的格式化支持的非常好，不但可以在编辑的时候自动帮你格式化，还可以选中一块代码，按 Ctrl-Alt-\ 对这块代码重新进行格式化。如果要粘贴一块代码的话，粘贴完了紧接着按 Ctrl-Alt-\ 就可以把新加入的代码格式化好。可是，对于这种粘贴加上重新格式化的机械操作，Emacs 应该可以将它自动化才能配得上它的名气，把下面的代码加到配置文件里，你的 Emacs 就会拥有这种能力了
+
+<pre lang="lisp" line="1">
+(dolist (command '(yank yank-pop))
+  (eval
+   `(defadvice ,command (after indent-region activate)
+      (and (not current-prefix-arg)
+           (member major-mode
+                   '(emacs-lisp-mode
+                     lisp-mode
+                     clojure-mode
+                     scheme-mode
+                     haskell-mode
+                     ruby-mode
+                     rspec-mode
+                     python-mode
+                     c-mode
+                     c++-mode
+                     objc-mode
+                     latex-mode
+                     js-mode
+                     plain-tex-mode))
+           (let ((mark-even-if-inactive transient-mark-mode))
+             (indent-region (region-beginning) (region-end) nil))))))
+</pre>
+
+你可以加入或删除一些 mode 名称来定制上面的配置。
+</p>
+<h3>Emacs 与 Windows 系统的整合</h3>
+<p>在注册表中加入下面的项，右键上下文菜单中就会多出 “Emacs”，你可以使用它快速用 Emacs 编辑任意文件而不用和该文件类型相关联</p>
+<pre lang="text">
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\Shell\Emacs\command]
+@="\"D:\\full\\path\\to\\emacs\\bin\\emacsclientw.exe\" -n -a \"D:\\full\\path\\to\\emacs\\bin\\runemacs.exe\" \"%1\""
+</pre>
+<p>
+这里调用 emacsclientw.exe 是为了使用 server-mode 来避免再打开一个 Emacs 实例，-n 参数指明不需要等待 Emacs (server) 编辑结束就直接返回，-a 指明一个替代品：如果找不到 Emacs server，那就通过 "runemacs.exe " 启动一个 Emacs 实例来编辑。 不要忘了在 .emacs 里加入 (server-mode 1) 来自动启动 emacs server。
+</p>
+<p>
+有些工具在使用外部工具时命令行不能带任何参数，遇到这种情况，只能写一个 BATCH 文件把上面的命令包装一下：
+</p>
+<pre>
+D:\full\path\to\emacs\bin\emacsclientw.exe -n -a "D:\full\path\to\emacs\bin\runemacs.exe" %*
+</pre>
+<p>
+如果装了 Visual Studio, 那么，在 Visual Studio 的菜单 Tools 下面可以通过 External Tools 加入一个自定义的外部工具。外部工具的命令可以使用上面定义的 emacsclientw.exe, 参数那栏加上 
+<pre>
+-n -a "D:\full\path\to\emacs\bin\runemacs.exe" +$(CurLine) $(ItemPath)”
+</pre>
+将这个外部工具设上一个方便的快捷键，比如我就设成 Alt-F1，这样每次用 Visual Studio 浏览代码时，如果看到想编辑的内容，直接 Alt-F1 就可以把 Emasc 呼出，光标会自动放在文件刚刚看的那行上面。编辑完了后再 Alt-Tab 就可以切会 Visual Studio 了。你可能还需要设置 Visual Studio 自动重新载入改过的文件，避免每次都弹出对话框让你确认是否重新载入。
+</p>
+<h3>Emacs 的配色</h3>
+<p>
+我以前的 Emacs 配色非常简单，黑底白字。用的时间长了会腻，而且，Emacs 默认的代码高亮配色只能说相当的一般。
+
+<pre lang="lisp" line="1">
+(setq default-frame-alist
+      '((cursor-color . "purple")
+        (cursor-type . box)
+        (foreground-color . "white")
+        (background-color ."black"))
+</pre>
+</p>
+<p>
+这两天在网上搜 Emacs 相关配置的时候，无意见发现了一个很漂亮的配置。一个好心人用了下 Mac 上的神级编辑器 TextMate。发现里面的 Blackboard 颜色主题很养眼，于是就把这个配色方案写成了一个 color-theme 移到了 Emacs 上，效果<a href="http://blog.jdhuntington.com/2008/11/emacs-color-theme-blackboard.html" target="_blank">相当赞</a>。
+</p>
+<p>
+我在使用这个主题时做了三处调整
+<ul>
+<li>变量声明的颜色改为 绿宝石色，与函数声明的颜色相区别</li>
+  <li>背景底色由黑板色改为纯黑色，增加对比度</li>
+  <li>当前行高亮色改为深蓝色(#001)，不让它太明显</li>
+</ul>
+
+下面是我调整后的主题
+
+<pre lang="lisp" line="1">
+;; Blackboard Colour Theme for Emacs.
+;;
+;; Defines a colour scheme resembling that of the original TextMate Blackboard colour theme.
+;; To use add the following to your .emacs file (requires the color-theme package):
+;;
+;; (require 'color-theme)
+;; (color-theme-initialize)
+;; (load-file "~/.emacs.d/themes/color-theme-blackboard.el")
+;;
+;; And then (color-theme-blackboard) to activate it.
+;;
+;; MIT License Copyright (c) 2008 JD Huntington 
+;; Credits due to the excellent TextMate Blackboard theme
+;;
+;; All patches welcome
+
+(defun color-theme-blackboard ()
+  "Color theme by JD Huntington, based off the TextMate Blackboard theme, created 2008-11-27"
+  (interactive)
+  (color-theme-install
+   '(color-theme-blackboard
+     (
+      ;; (background-color . "#0C1021")
+      (background-color . "black")
+      (background-mode . dark)
+      (border-color . "black")
+      (cursor-color . "#A7A7A7")
+      (foreground-color . "#F8F8F8")
+      (mouse-color . "sienna1"))
+     ;; (default ((t (:background "#0C1021" :foreground "#F8F8F8"))))
+     (default ((t (:background "black" :foreground "#F8F8F8"))))
+     (blue ((t (:foreground "blue"))))
+     (bold ((t (:bold t))))
+     (bold-italic ((t (:bold t))))
+     (border-glyph ((t (nil))))
+     (buffers-tab ((t (:background "#0C1021" :foreground "#F8F8F8"))))
+     (font-lock-builtin-face ((t (:foreground "#F8F8F8"))))
+     (font-lock-comment-face ((t (:italic t :foreground "#AEAEAE"))))
+     (font-lock-constant-face ((t (:foreground "#D8FA3C"))))
+     (font-lock-doc-string-face ((t (:foreground "DarkOrange"))))
+     (font-lock-function-name-face ((t (:foreground "#FF6400"))))
+     (font-lock-keyword-face ((t (:foreground "#FBDE2D"))))
+     (font-lock-preprocessor-face ((t (:foreground "Aquamarine"))))
+     (font-lock-reference-face ((t (:foreground "SlateBlue"))))
+
+     (font-lock-regexp-grouping-backslash ((t (:foreground "#E9C062"))))
+     (font-lock-regexp-grouping-construct ((t (:foreground "red"))))
+
+     (font-lock-string-face ((t (:foreground "#61CE3C"))))
+     (font-lock-type-face ((t (:foreground "#8DA6CE"))))
+     ;(font-lock-variable-name-face ((t (:foreground "#FF6400"))))
+     (font-lock-variable-name-face ((t (:foreground "#40E0D0"))))
+     (font-lock-warning-face ((t (:bold t :foreground "Pink"))))
+     (gui-element ((t (:background "#D4D0C8" :foreground "black"))))
+     (region ((t (:background "#253B76"))))
+     (mode-line ((t (:background "grey75" :foreground "black"))))
+     ;(highlight ((t (:background "#222222"))))
+     (highlight ((t (:background "#001"))))
+     (highline-face ((t (:background "SeaGreen"))))
+     (italic ((t (nil))))
+     (left-margin ((t (nil))))
+     (text-cursor ((t (:background "yellow" :foreground "black"))))
+     (toolbar ((t (nil))))
+     (underline ((nil (:underline nil))))
+     (zmacs-region ((t (:background "snow" :foreground "ble")))))))
+</pre>
+</p>
+<p>
+使用的话需要先安装 color-theme 包，将上面的配色存为 color-theme-blackboard.el 放在 emacs 的 load path 中，在加入下面的配置就好了：
+
+<pre lang="lisp" line="1">
+(require 'color-theme)
+(eval-after-load "color-theme"
+  '(progn
+     (color-theme-initialize)
+     (color-theme-blackboard)))
+</pre>
+
+</p>
+<p>
+来看看我配置的使用 Consolas + “雅黑” + blackboard-theme的Emacs：</p>
+[caption width="150" caption="小强的Emacs"]<a href="screenshots/qiang-emacs.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_qiang-emacs.png"/></a>[/caption]
+<p>
+虽说10个人会配出 11 种不同的 Emacs，不过我这个还算是芙蓉出水，落落大方吧 :P
+</p>
+<p>
+
+
+</p>
+<p>
+折腾到此结束，“整容”过后的 Emacs 更加的漂亮听话了。话说回来，Emacs 实在是要与时俱进，多和苹果学学，改进一下自己难学难用的形象，最好将这些好用的 UI 操作设为默认配置。毕竟对最终用户来说这样的折腾也只能偶尔为之，老是将心思花在配置这神一样的编辑器上面，自己早晚也要成为半仙。
+</p>

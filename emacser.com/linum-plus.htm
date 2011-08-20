@@ -1,0 +1,103 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-18 14:21:51 Sunday by ahei" -->
+
+<!-- Emacs才是世界上最强的IDE － 用linum+智能显示行号 -->
+
+稍微现代点的编辑器都有行号显示功能，行号显示是在buffer的左侧一栏显示当前buffer每行的行号，比较直观，但其实在以鼠标为中心的编辑器、IDE中，其实这个行号显示功能不大，但是在以纯键盘为中心的编辑器，如vi, Emacs中这个行号显示功能就非常方便了，它可以帮助你迅速定位到某行，知道了行号，直接通过M-x goto-line到达某行，非常方便。<!--more-->
+
+但是Emacs比较“土”，Emacs23之前一直没有内置的行号显示功能，但是“土”归“土”，但是它很听话，你要怎样控制它就怎样控制它，所以诞生了一堆外置的行号显示插件，比如wb-line-number, setnu, setnu-plus, display-line-number, 虽然很多，但是都有一些小bug，不是很方便。Emacs23出来后，我欣喜的看到，它已经内置了行号显示功能，用的是linum-mode，既然是内置的，当然性能比较好，bug也比较少。它每次只显示当前buffer可视区域内的行号，而且用了一个小缓存的技巧，保证了性能，即使打开大文件也没问题。它的行号显示格式是通过linum-format来控制的，该值为'dynamic的话，就会动态控制行号的宽度，比如当前buffer最大行是3位数，那么行号的宽度就是3，这个format还可以设为固定的宽度，比如设置成"%4d"，那么始终显示成4个字符宽度。一般的编辑器用的都是那个'dynamic, 动态控制行号显示的宽度。
+
+但是这个动态显示宽度还不够智能，比如当前buffer最大行的行号是3位数，我显示前面几行行号的时候，比如从1到50，没必要也用3个字符宽度来显示，只需要用2位就可以了，所以我写了一个linum+，来弥补linum这个缺点，linum+主要是重新定义了下linum里面更新行号的函数linum-update-window，代码如下：
+<pre lang="lisp" line="1">
+;;;###autoload
+(defun linum+-generate-linum-format (format-type limit)
+  "Generate line number format by FORMAT-TYPE, LIMIT is `window-end' of win."
+  (cond ((stringp format-type) format-type)
+        ((or (listp format-type) (vectorp format-type)
+             (eq format-type 'dynamic) (eq format-type 'smart))
+         (let* ((dynamic-width (or (vectorp format-type) (eq format-type 'smart)))
+                (old-format
+                 (if (eq format-type 'dynamic)
+                     linum+-dynamic-format
+                   (if (eq format-type 'smart)
+                       linum+-smart-format
+                     format-type)))
+                (w (length
+                    (number-to-string
+                     (line-number-at-pos (if dynamic-width limit (point-max))))))
+                (new-format
+                 (if (listp old-format)
+                     (car old-format)
+                   (if (vectorp old-format)
+                       (aref old-format 0)
+                     old-format))))
+           (format new-format w)))))
+
+;;;###autoload
+(defun linum-update-window (win)
+  "Update line numbers for the portion visible in window WIN."
+  (goto-char (window-start win))
+  (let* ((line (line-number-at-pos))
+         (limit (window-end win t))
+         (fmt (linum+-generate-linum-format linum-format limit))
+         (width 0))
+    (run-hooks 'linum-before-numbering-hook)
+    ;; Create an overlay (or reuse an existing one) for each
+    ;; line visible in this window, if necessary.
+    (while (and (not (eobp)) (<= (point) limit))
+      (let* ((str (if fmt
+                      (propertize (format fmt line) 'face 'linum)
+                    (funcall linum-format line)))
+             (visited (catch 'visited
+                        (dolist (o (overlays-in (point) (point)))
+                          (when (equal-including-properties
+                                 (overlay-get o 'linum-str) str)
+                            (unless (memq o linum-overlays)
+                              (push o linum-overlays))
+                            (setq linum-available (delq o linum-available))
+                            (throw 'visited t))))))
+        (setq width (max width (length str)))
+        (unless visited
+          (let ((ov (if (null linum-available)
+                        (make-overlay (point) (point))
+                      (move-overlay (pop linum-available) (point) (point)))))
+            (push ov linum-overlays)
+            (overlay-put ov 'before-string
+                         (propertize " " 'display `((margin left-margin) ,str)))
+            (overlay-put ov 'linum-str str))))
+      (forward-line)
+      (setq line (1+ line)))
+    (set-window-margins win width)))
+</pre>
+其实这个linum-update-window改的很简单，主要是根据当前最大行号来制定一个宽度。
+linum+.el全文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/linum%2B.el" target="_blank">这里</a>下载。
+因为只有行号从n位数过度到n+1位数的时候，行号宽度才会发生改变，这种机会并不多，所以我这个linum+性能基本上和linum一样。
+
+linum中, linum-format有可以有三种形式, string, 'dynamic, 或者函数, 你使用了linum+以后，增加了三种形式, 分别是'smart, 含有一个字符串的list, 和含有一个字符串的vector, string和函数还和linum中的作用一样, 'dynamic还是根据当前buffer最大行来控制最大的行号宽度, 'smart则是智能根据当前可使范围内最大行号来控制行号显示宽度的, 如果是list的话, 则是根据list中的字符串来和当前最大行号的宽度一起作为format函数的参数来生成当前行号的格式，然后再用这个格式来显示行号，比如当前buffer显示的行数是从1到50，那么最大的行号是50，其宽度是2，list的值为'("%%%dd|"), 那么当前buffer每行行号的显示格式就是：
+<pre lang="lisp" line="1">
+(format "%%%dd|" 2)
+        =>"%2d|"
+</pre>
+得到"%2d|"，然后当前buffer每行的行号显示格式就是"%2d|"了。
+当linum-format为vector的时候, 处理过程基本和list的一样, 唯一的差别就是行号的格式的时候, "%d"是用当前buffer最大行号的宽度去替换的, 比如当前最大行号是125, 其宽度是3, 那么当前buffer每行行号的显示格式就是:
+<pre lang="lisp" line="1">
+(format "%%%dd|" 3)
+        =>"%2d|"
+</pre>
+得到"%3d|"，然后当前buffer每行的行号显示格式就是"%2d|"了。
+其实, linum+内部实现时, 'dynamic和'("%%%dd|")作用一样, 'smart和["%%%dd|"]作用一样. 你不喜欢'smart后面的"|"的话, 把linum-format设置为["%%%dd"]就可以了.
+如果你喜欢linum中的'dynamic, 根据buffer最大的行号生成固定的宽度, 而不喜欢linum+中'smart那样动态变化的宽度, 你仍然可以把linum-format配置成'dynamic, 或者配置成list, 比如'("%%%dd"), 这样既可以享受固定的宽度, 又可以享受可配置的格式(linum中linum-format为'dynamic, 行号的格式你是控制不了的)
+
+下面是linum+的截图：
+<table border="0">
+  <tr>
+    <td>
+      [caption width="150" caption="用linum+智能显示行号"]<a href="screenshots/linum+/linum+1.png" rel="lightbox"><img src="screenshots/linum+/thumbs/thumbs_linum+1.png" width="150" height="150" /></a>[/caption]
+    </td>
+
+    <td>
+      [caption width="150" caption="用linum+智能显示行号"]<a href="screenshots/linum+/linum+2.png" rel="lightbox"><img src="screenshots/linum+/thumbs/thumbs_linum+2.png" width="150" height="150" /></a>[/caption]
+    </td>
+  </tr>
+</table>

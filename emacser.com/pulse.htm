@@ -1,0 +1,65 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-06 13:05:14 Saturday by ahei" -->
+
+<!-- 用pulse实现Emacs的淡入淡出效果 -->
+
+各种“现代”的IDE都会有一些眩的动画效果，那“土的掉渣”的Emacs有没有这样的功能呢？
+
+去年在使用cedet的cvs版本的时候，我随便试了一下semantic的semantic-complete-jump-local，这个命令可以跳到当前文件的tag，我发现这个命令在跳到对应的tag后，竟然把那个tag对应的区域淡入淡出了一下，效果非常的眩。前阵子无聊，跟了一下那个命令的代码，最终发现这个效果是有cedet的pulse.el提供的，其实它的原理很简单，就是定时渐变一下颜色而已。我录了一段<a href="pulse-video.htm" target="_blank"><span style="color: #0000ff;">视频</span></a>，来演示这个淡入淡出的效果，演示的主要是goto-line，semantic-complete-jump-local，switch-to-other-buffer的淡入淡出的效果，视频是用<a href="http://www.unixuser.org/~euske/vnc2swf/" target="_blank">vnc2swf</a>录制的，它需要你用vnc客户端连上服务器后，在里面操作，所以操作速度有点慢，视频里的淡入淡出效果不是很理想(如果哪位同志知道linux下有更好的视频录制工具，欢迎告诉我)。<!--more-->
+
+pulse-momentary-highlight-one-line可以淡入淡出一行，pulse-momentary-highlight-region淡入淡出一个区域。pulse-toggle-integration-advice，可以使得goto-line，exchange-point-and-mark，find-tag等命令也加上淡入淡出的效果。
+
+如果你想在你的程序里面使用淡入淡出效果，直接调用上面的pulse-momentary-highlight-one-line和pulse-momentary-highlight-region函数，也可以为你的命令增加advice，比如，
+<pre lang="lisp" line="1">
+(defadvice ido-switch-buffer (after pulse-advice activate)
+  "Cause the current line of new buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+</pre>
+这样每次切换到新的buffer后，都会淡入淡出当前行，说到这里，你是不是有点担心这可能会降低你的操作效率，不用担心，如果正在淡入淡出时，你按任何键都会终止这个效果，不会降低你的操作效率。
+
+我的pulse配置在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/pulse-settings.el" target="_blank">这里</a>，配置如下：
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2010-02-25 19:35:15 Thursday by ahei>
+
+(require 'pulse)
+
+(defadvice exchange-point-and-mark-nomark (after pulse-advice activate)
+  "Cause the line that is `goto'd to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p)
+	     (> (abs (- (point) (mark))) 400))
+    (pulse-momentary-highlight-one-line (point))))
+
+(defadvice switch-to-buffer (after pulse-advice activate)
+  "Cause the current line of new buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+
+(defadvice ido-switch-buffer (after pulse-advice activate)
+  "Cause the current line of new buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+
+(defadvice switch-to-other-buffer (after pulse-advice activate)
+  "Cause the current line of new buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+
+(defadvice visit-.emacs (after pulse-advice activate)
+  "Cause the current line of .emacs buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+
+(defadvice beginning-of-buffer (after pulse-advice activate)
+  "Cause the current line of buffer to pulse when the cursor gets there."
+  (when (and pulse-command-advice-flag (interactive-p))
+    (pulse-momentary-highlight-one-line (point))))
+
+(pulse-toggle-integration-advice (if window-system 1 -1))
+</pre>
+
+<h4>后记</h4>
+更炫的Emacs动画效果请看<a href="highlight-tail.htm" target="_blank">用性感的尾巴highlight-tail标记最近的修改</a>。

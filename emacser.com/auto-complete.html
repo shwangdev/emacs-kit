@@ -1,0 +1,331 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-04-12 08:57:41 Monday by ahei> -->
+
+<!-- Emacs才是世界上最强大的IDE － 用auto-complete实现自动补全 -->
+
+以前emacs下面一直没有什么比较好用的补全, 一开始有位朋友推荐给我company-mode, 用了一下, 感觉挺慢的(可能当时我用了semantic的补全), 就没用了, 后来, 这位朋友又推荐给我<a href="http://www.emacswiki.org/emacs/AutoComplete" target="_blank">auto-complete</a>, 这个补全是国外一个牛人大概在2008.11.9左右开发出来的, 最新的版本才0.3.0 alpha, 不过我试用了一下就觉得非常好用, 从此就开始用它来补全了, 它有三大优点:<!--more-->
+<ul>
+  <li>补全是通过弹出菜单来展现的, 比较直观(一般现在的IDE也都是这样实现的), 其实hippie-expand的补全也还行, 但是就是没有弹出菜单, 不够直观</li>
+  <li>补全的弹出菜单是用overlay实现的, 所以在emacs的字符界面下也能用, 以前也有些补全比如cedet也能弹出补全菜单, 但是只能在GUI界面下使用</li>
+  <li>它通过各种backend来实现各种mode下的补全的, 比如：补全全路径文件名的backend，补全单独文件名的backend，补全当前buffer下单词的backend，补全所有buffer下的单词的backend，补全Elisp语法的引擎，补全yasnippet片段的引擎，补全缩写的引擎，等等等等，用户也可以自己实现这些backend, 扩展性非常好(扩展性和定制性对一个软件来说是至关重要的, 这方面<a href="http://www.gnu.org/software/emacs/" target="_blank">emacs</a>和<a href="http://www.vim.org/" target="_blank">vim</a>做的很好, 所以才能成为最优秀的软件)。</li>
+</ul>
+说了这么多, 大家还不知道auto-complete长啥样呢, 我们先来看看它:
+<table border="0">
+  <tr>
+    <td>
+      [caption width="150" caption="emacs的代码补全"]<a href="screenshots/auto-complete/auto-complete.png" rel="lightbox"><img title="auto complete in emacs" src="screenshots/auto-complete/thumbs/thumbs_auto-complete.png" alt="emacs的代码补全" width="150" height="150" /></a>[/caption]
+    </td>
+    <td>
+      [caption width="150" caption="emacs的代码补全"]<a href="screenshots/auto-complete/auto-complete2.png" rel="lightbox"><img title="auto complete in emacs" src="screenshots/auto-complete/thumbs/thumbs_auto-complete2.png" alt="emacs的代码补全" width="150" height="150" /></a>[/caption]
+    </td>
+  </tr>
+</table>
+auto-complete作者还给了一段<a href="http://www.cx4a.org/pub/ac-demo/ac-demo.html" target="_blank">视频</a>来演示它.
+auto-complete的配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/auto-complete-settings.el" target="_blank">这里</a>，配置如下:
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2010-04-09 10:22:51 Friday by ahei>
+
+(require 'auto-complete)
+(require 'auto-complete-config)
+(require 'auto-complete-yasnippet)
+(require 'auto-complete-c)
+(require 'auto-complete-etags)
+(require 'auto-complete-extension)
+(require 'auto-complete-octave)
+(require 'auto-complete-verilog)
+(require 'auto-complete+)
+(require 'util)
+
+(defun auto-complete-settings ()
+  "Settings for `auto-complete'."
+  ;; After do this, isearch any string, M-: (match-data) always
+  ;; return the list whose elements is integer
+  (global-auto-complete-mode 1)
+
+  ;; 不让回车的时候执行`ac-complete', 因为当你输入完一个
+  ;; 单词的时候, 很有可能补全菜单还在, 这时候你要回车的话,
+  ;; 必须要干掉补全菜单, 很麻烦, 用M-j来执行`ac-complete'
+  (apply-define-key
+   ac-complete-mode-map
+   `(("<return>"   nil)
+     ("RET"        nil)
+     ("M-j"        ac-complete)
+     ("<C-return>" ac-complete)
+     ("M-n"        ac-next)
+     ("M-p"        ac-previous)))
+
+  (setq ac-dwim t)
+  (setq ac-candidate-max ac-candidate-menu-height)
+
+  (set-default 'ac-sources
+               '(ac-source-semantic
+                 ac-source-yasnippet
+                 ac-source-abbrev
+                 ac-source-words-in-buffer
+                 ac-source-words-in-all-buffer
+                 ac-source-imenu
+                 ac-source-files-in-current-dir
+                 ac-source-filename))
+  (setq ac-modes ac+-modes)
+
+  (dolist (command `(backward-delete-char-untabify delete-backward-char))
+    (add-to-list 'ac-trigger-commands command))
+
+  (defun ac-start-use-sources (sources)
+    (interactive)
+    (let ((ac-sources sources))
+      (call-interactively 'ac-start)))
+
+  (defvar ac-trigger-edit-commands
+    `(self-insert-command
+      delete-backward-char
+      backward-delete-char
+      backward-delete-char-untabify)
+    "*Trigger edit commands that specify whether `auto-complete' should start or not when `ac-completing'."))
+
+(eval-after-load "auto-complete"
+  '(auto-complete-settings))
+
+(eval-after-load "cc-mode"
+  '(progn
+     (dolist (command `(c-electric-backspace
+                        c-electric-backspace-kill))
+       (add-to-list 'ac-trigger-commands command)
+       (add-to-list 'ac-trigger-edit-commands command))))
+
+(eval-after-load "autopair"
+  '(progn
+     (dolist (command `(autopair-insert-or-skip-quote
+                        autopair-backspace
+                        autopair-extra-skip-close-maybe))
+       (add-to-list 'ac-trigger-commands command))
+
+     (defun ac-trigger-command-p ()
+       "Return non-nil if `this-command' is a trigger command."
+       (or
+        (and
+         (memq this-command ac-trigger-commands)
+         (let* ((autopair-emulation-alist nil)
+                (key (this-single-command-keys))
+                (beyond-autopair (or (key-binding key)
+                                     (key-binding (lookup-key local-function-key-map key)))))
+           (memq beyond-autopair ac-trigger-edit-commands)))
+        (and ac-completing
+             (memq this-command ac-trigger-edit-commands))))))
+
+(defun ac-settings-4-lisp ()
+  "Auto complete settings for lisp mode."
+  (setq ac-omni-completion-sources '(("\\<featurep\s+'" ac+-source-elisp-features)
+                                     ("\\<require\s+'"  ac+-source-elisp-features)
+                                     ("\\<load\s+\""    ac-source-emacs-lisp-features)))
+  (ac+-apply-source-elisp-faces)
+  (setq ac-sources
+        '(ac-source-yasnippet
+          ac-source-symbols
+          ;; ac-source-semantic
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ;; ac-source-imenu
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-java ()
+  (setq ac-omni-completion-sources (list (cons "\\." '(ac-source-semantic))
+                                         (cons "->" '(ac-source-semantic))))
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-c ()
+  (setq ac-omni-completion-sources (list (cons "\\." '(ac-source-semantic))
+                                         (cons "->" '(ac-source-semantic))))
+  (setq ac-sources
+        '(ac-source-yasnippet
+          ac-source-c-keywords
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-cpp ()
+  (setq ac-omni-completion-sources
+        (list (cons "\\." '(ac-source-semantic))
+              (cons "->" '(ac-source-semantic))))
+  (setq ac-sources
+        '(ac-source-yasnippet
+          ac-source-c++-keywords
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-text ()
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-imenu)))
+
+(defun ac-settings-4-eshell ()
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename
+          ac-source-symbols
+          ac-source-imenu)))
+
+(defun ac-settings-4-ruby ()
+  (require 'rcodetools-settings)
+  (setq ac-omni-completion-sources
+        (list (cons "\\." '(ac-source-rcodetools))
+              (cons "::" '(ac-source-rcodetools)))))
+
+(defun ac-settings-4-html ()
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-tcl ()
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(defun ac-settings-4-awk ()
+  (setq ac-sources
+        '(;;ac-source-semantic
+          ac-source-yasnippet
+          ac-source-abbrev
+          ac-source-words-in-buffer
+          ac-source-words-in-all-buffer
+          ac-source-files-in-current-dir
+          ac-source-filename)))
+
+(am-add-hooks
+ `(lisp-mode-hook emacs-lisp-mode-hook lisp-interaction-mode-hook
+                  svn-log-edit-mode-hook change-log-mode-hook)
+ 'ac-settings-4-lisp)
+
+(apply-args-list-to-fun
+ (lambda (hook fun)
+   (am-add-hooks hook fun))
+ `(('java-mode-hook   'ac-settings-4-java)
+   ('c-mode-hook      'ac-settings-4-c)
+   ('c++-mode-hook    'ac-settings-4-cpp)
+   ('text-mode-hook   'ac-settings-4-text)
+   ('eshell-mode-hook 'ac-settings-4-eshell)
+   ('ruby-mode-hook   'ac-settings-4-ruby)
+   ('html-mode-hook   'ac-settings-4-html)
+   ('java-mode-hook   'ac-settings-4-java)
+   ('awk-mode-hook    'ac-settings-4-awk)
+   ('tcl-mode-hook    'ac-settings-4-tcl)))
+
+(eal-eval-by-modes
+ ac-modes
+ (lambda (mode)
+   (let ((mode-name (symbol-name mode)))
+     (when (and (intern-soft mode-name) (intern-soft (concat mode-name "-map")))
+       (define-key (symbol-value (am-intern mode-name "-map")) (kbd "C-c a") 'ac-start)))))
+
+(provide 'auto-complete-settings)
+</pre>
+auto-complete的使用很简单, 你在输入的时候, 它会弹出一个菜单提示你有哪些补全, 你可以通过M-n和M-p来上下选择, 然后按回车或者M-j来确定你的选择, 或者按TAB键来选择补全, 这样就不用再按回车键或者M-j来确认选择了, 按其它没有绑定到ac-complete-mode-map上的键, 会自动关闭auto-complete的补全菜单, 比其他的一些IDE下的补全用起来方便多了.
+
+auto-complete默认的文件全路径名补全和当前路径下的文件名(不包括路径)补全会提示出一些你不需要的文件, 比如当前目录"."和父目录"."以及.svn,CVS, 还有在emacs-lisp-mode-map下补全symbol的时候, 会提示一些垃圾symbol, 我写了一个<a title="http://www.emacswiki.org/emacs/AutoCompletePlus" href="http://www.emacswiki.org/emacs/AutoCompletePlus" target="_blank">auto-complete+</a>(AutoCompletePlus)来改正这些缺点.
+
+最近水木的emacs版上, 一位网友提出auto-complete不能在c++-mode下用ac-source-filename, ac-source-filename是补全全路径名的, 比如你现在输入/ho, auto-complete就会提示/home/, 然后你选择/home/, auto-complete又会提示/home/ahei/, 这样你又可以选择它, 总之, 对输入全路径名非常方便.我试了一下果然如此, 最后通过看auto-complete源码才知道原来这是auto-complete的一个bug.我们下面来看一下.auto-complete的开始补全是通过命令ac-start的执行的, ac-start的定义如下:
+<pre lang="lisp" line="1">
+(defun ac-start ()
+  "Start completion."
+  (interactive)
+  (let* ((point (save-excursion (funcall ac-prefix-function)))
+         (reposition (or (not (equal ac-point point))
+                         ;; If menu direction is positive and next visual line belongs
+                         ;; to same buffer line, then need reposition
+                         (and (> ac-menu-direction 0)
+                              (ac-menu-at-wrapped-line)))))
+</pre>
+auto-complete在补全时通过ac-prefix-function这个函数来确定要待补全的前缀ac-prefix, ac-prefix-function的定义如下:
+<pre lang="lisp" line="1">
+(defvar ac-prefix-function 'ac-sources-prefix
+  "When `auto-complete-mode' finds it can start completion
+or update candidates, it will call this function to find a
+start point of the prefix.
+
+If this function returns a point `auto-complete-mode'
+will set the substring between the point and current point to `ac-prefix'.
+And also it will start completion or update candidates by using
+the `ac-prefix'.
+
+If this function returns `nil', `auto-complete-mode'
+ignore starting completion or stop completing.")
+</pre>
+它的值是ac-sources-prefix, 我们再来看看它的定义:
+<pre lang="lisp" line="1">
+(defun ac-sources-prefix ()
+  "Implemention for `ac-prefix-function' by sources."
+  (let (point)
+    (dolist (pair ac-omni-completion-sources)
+      (when (looking-back (car pair) nil t)
+        (setq ac-current-sources (cdr pair))
+        (setq ac-sources-omni-completion t)
+        (setq ac-completing t)
+        (setq point (match-end 0))))
+    (or point
+        (if (and ac-completing ac-sources-omni-completion)
+            ac-point
+          (setq ac-current-sources ac-sources)
+          (setq ac-sources-omni-completion nil)
+          (funcall ac-sources-prefix-function)))))
+</pre>
+这个函数最终调用的是ac-sources-prefix-function, 其定义如下:
+<pre lang="lisp" line="1">
+(defvar ac-sources-prefix-function 'ac-sources-prefix-default
+  "Default prefix function for sources.
+You should override this variable instead of ac-prefix-function.")
+</pre>
+看来它的值是ac-sources-prefix-default, 而ac-sources-prefix-default是:
+<pre lang="lisp" line="1">
+(defun ac-sources-prefix-default ()
+  "Default implementation for `ac-sources-prefix-function'."
+  (require 'thingatpt)
+  (car-safe (bounds-of-thing-at-point 'symbol)))
+</pre>
+好了, 我们现在已经接近真相了, 原来auto-complete是通过调用bounds-of-thing-at-point来查找当前光标下的一个symbol的边界, 然后取得这个边界的第一个元素, 即边界的开始处, 然后把这个边界的开始处到当前光标下的内容作为ac-prefix.那么我们现在只要来看一下c++-mode下的当前光标下的symbol是什么就知道为什么不能补全全路径名了.
+
+我们先来打开一个cpp文件, 然后输入/home/ahe, 光标停在i后面, 这时候执行M-x eval-expression, 然后输入(thing-at-point ‘symbol), emacs提示:
+<pre lang="lisp">
+  #("ahe" 0 3 (selection-face nil candidate-face nil action nil fontified t face font-lock-string-face))
+</pre>
+这时候你应该已经知道了吧, 在c++-mode下当前光标的symbol是ahe, 并不是/home/ahe, 不能补全/home/ahei/理所当然.
+
+那我们怎样来修改这个bug呢?我觉得每个mode下应该有自己的ac-sources-prefix-function, 而且不能只取得一个thing, 比如symbol, 应该能取得多个things, 比如symbol和filename, 然后提示以它们作为前缀的所有补全.可惜这个比较难修改, 只能留待作者去改进了, 我已经给作者提交了bug report.
+
+<h3>后记</h3>
+也许有人使用过<a href="http://code.google.com/p/yasnippet/" target="_blank">yasnippet</a>，觉得yasnippet比auto complete好用多了，关于这个，请看<a href="auto-complete_yasnippet.htm" target="_blank">auto complete和yasnippet的区别</a>。

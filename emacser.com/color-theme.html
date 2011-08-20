@@ -1,0 +1,16 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-03-06 13:08:49 Saturday by ahei> -->
+
+<!-- Emacs的皮肤 － Color Theme -->
+<!-- Emacs的颜色主题 － Color Theme -->
+
+<a href="http://www.emacswiki.org/emacs/ColorTheme" target="_blank">Color theme</a>是一个Emacs颜色主题包，它有50多种颜色主题供你选择，使用很简单，把包下载下来后，这样配置：<!--more-->
+<pre lang="lisp" line="1">
+;; color theme
+(require 'color-theme)
+(eval-after-load "color-theme"
+  '(progn
+     (color-theme-initialize)))
+</pre>
+不过每个主题可能都会一些你不满意的地方，可以参见<a href="icicles-doremi-palette.html" target="_blank">这里</a>去看一些Emacs配色的强大工具。Color theme选择主题的时候，要一个一个去试，比较麻烦，<a href="icicles-doremi-palette.html" target="_blank">这里</a>有比较好的工具来选择颜色主题。Color theme还有一个非常好用的命令color-theme-print, 它可以把你当前的颜色设置制作成Color theme，我就做了一个Color theme，<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/color-theme-ahei.el" target="_blank">这里</a>下载，它的效果截图在<a href="emacs.html" target="_blank">这里</a>。

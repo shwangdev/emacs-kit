@@ -1,0 +1,102 @@
+#+OPTIONS: ^:nil author:nil timestamp:nil creator:nil
+
+# C, 中级
+# 高亮C的变量和函数
+
+高亮C的所有变量和函数
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: </span><a href="http://emacser.com/about.htm#nowait" target="_blank"><span style="color: #0000ff;"><b>nowait@smth</b></span></a>
+#+END_HTML
+
+** 前言
+   emacs的代码语法加亮实在是做的不好,和source insight无法相比, 可能是以前没有集成cedet,不好分析语法的原因吧.我就自己写了一个山寨品来用. 之所以说这个文章里要介绍的这个zjl-c-hl.el是山寨的,是由于最重要的变量和参数加亮的实现原理是山寨的:用semantic得到单个函数的变量和参数list(这个还不算山寨),然后用highlight.el对函数范围内的变量和参数进行匹配加亮(就是这个就比较山寨). 我估计正常应该是用font-lock-add-keywords的高级功能来加亮,从而比较深的整合进emacs本身中. 不过我一直没有去深入的研究, 这个code也是按需要逐渐添加的. 虽然比较山寨,不过挺好用的. 下面是简单的介绍,很短, 看完了解了,有需要的朋友就可以拿来用了.
+#+HTML: <!--more-->
+
+** 有图为证, 图个痛快
+#+BEGIN_HTML
+[caption width="150" caption="zjl-c-hl效果截图"]<a href="screenshots/zjl-c-hl.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_zjl-c-hl.png"/></a>[/caption]
+#+END_HTML
+
+** install
+   到这儿下载zjl-c-hl.el(以后应该wiki上面会有)http://code.google.com/p/dea/source/browse/trunk/lisps/zjl-c-hl.el
+   这个包里面使用了emacswiki上的highlight.el,从这儿下载:http://www.emacswiki.org/emacs/highlight.el
+   (require 'zjl-c-hl)
+
+** Feature
+- 支持c文件, 如果是.cpp文件,内部实际是c,也可以:), 那种实际是cpp的,估计把zjl-c-hl-c++-mode-enable-flag为妥.
+- 加亮对象包括:局部变量,函数引用, 操作符,数字. 加亮的结果是还剩下的黑白字(默认face)部分的则一定是全局变量,宏或错误的局部变量(比如输入错误).
+- 加亮过的区域,不会再被加亮一次,除非函数内部被修改(参见下一条), 这样cpu资源消耗不大
+- 函数内部被修改后,进行局部(实际上是整个函数的)重新加亮. 具体表现为,就是随着代码输入,延时1-3秒加亮.
+- 颜色face可以customize,分为白背景和暗背景, 白背景的加亮face我尽量做成了source insight的默认颜色, 暗背景的我目前也是用的和白背景一样的face..., 我自己没怎么用过暗背景,觉得现在的也可以接受, 所以用户如果对暗背景的默认颜色不满意可以有两个选择
+  1) 自己默默的改得符合自己喜好
+  2) 改好了之后, 把custom.el发给我
+     
+** 缺陷
+   没有能够准确辨识出全局变量,宏,和函数调用导致:
+   1) 函数名/全局变量如果书写错误,无法实时得知,只能等待编译时知晓.
+   2) 全局变量没有加亮,不能够和宏定义区分, 不像source insight那样看的自然
+
+** 可以customize的变量
+   我直接从代码里面copy过来了,将就着看
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defcustom zjl-c-hl-c-mode-enable-flag t
+    "*Enable c mode highlight when zjl-c-hl-disable-global-all is called"
+     'zjl-c-hl)
+(defcustom zjl-c-hl-c++-mode-enable-flag t
+    "*Enable c++ mode highlight when zjl-c-hl-disable-global-all is called.
+Currently only c style file but named as *.cpp is supported"
+    :type 'boolean :group 'zjl-c-hl)
+(defcustom zjl-c-hl-normal-size 40000
+    "*The size of erea that zjl-c-hl can highlight without any delay.
+You can improve this if your computer has enough performance."
+    :type 'integer :group 'zjl-c-hl)
+(defcustom zjl-c-hl-toobig-size 10000000
+    "*The threshold size of function that zjl-c-hl will stop to highlight since it is too big. "
+    :type 'integer :group 'zjl-c-hl)
+(defcustom zjl-c-hl-toobig-not-update-size 1000000
+    "*The size of function that zjl-chl will stop to  highlight when the function is modified."
+    :type 'integer :group 'zjl-c-hl)
+(defcustom zjl-c-hl-numberofscreen-to-hl-each-time 2
+    "*The number of screens around current screen to highlight every time."
+    :type 'integer :group 'zjl-c-hl)
+(defcustom zjl-c-hl-firstscreen-hl-toggle nil
+    "*When not nil and when you open a new buffer, hl buffer before it shown on window."
+    :type 'boolean :group 'zjl-c-hl)
+</pre>
+#+END_HTML
+
+** 程序的骨干的说明----给不满意效果想要自行修改代码的同志看的
+   入口函数是zjl-c-hl-enable-global-all, 这个函数根据c-mode/c++-mode分别调用zjl-c-hl-enable-global, zjl-c-hl-enable-global里面定义是
+*** font-lock-add-keywords
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(font-lock-add-keywords
+     mode
+     zjl-c-hl-c-mode-keywords
+     1)
+</pre>
+#+END_HTML
+   zjl-c-hl-c-mode-keywords里面定义了operators, brackets, types, warning-words, number, member-reference, function-call, member-point加亮所需要的一切. 就是除了变量和参数加亮以外的所有的加亮靠这里实现
+
+*** (add-hook hook 'zjl-c-hl-init)
+    加亮变量和参数,具体是挂载在window-scroll-functions这个hook来实现. 使用这个hook原因有两个
+    1) 避免semantic的后台自动load文件分析时也运行zjl-c-hl-init, 所以我们就需要有机制判断只有拥有window的buffer才会被执行zjl-c-hl.
+    2) 每会用户scroll窗口的时候,也需要刷新新的位置的函数内部的加亮.
+    所以window-scroll-functions是很好的选择
+
+**** (add-hook 'window-scroll-functions 'zjl-c-hl-window-scroll-hook t t)
+***** 如果是第一次运行这个hook则
+      (add-hook 'semantic-after-partial-cache-change-hook 'zjl-c-hl-semantic-after-partial-cache-change-hook t t)  
+ 
+      zjl-c-hl-semantic-after-partial-cache-change-hook(tags)的内容是
+      1) semantic会把局部被更新的tags放在这个函数的调用参数里面, 里面包含了需要它重新分析过(由于buffer被修改导致的)的区域, 把这个区域标志为未加亮区域(具体是一个这样的list ((4 . 50) (100 . 300) (401 . 555)))
+      2) 调用zjl-c-hl-window-scroll-hook,实时刷新一下当前窗口内容
+
+***** (run-with-idle-timer 0.5 nil 'zjl-c-hl-timer-do-every-time (current-buffer))
+      每次窗口移动后,用户idle时,加亮当前窗口内的变量和参数,具体是
+      1) 设定范围A为当前窗口的前2个窗口的起始点所在的函数的开始和后2个窗口的末尾点所在的函数的结束
+      2) 检查范围A中是否有没有被刷新的区域, 如果有找出来, 并分别加亮区域
+
+再之后,就是比较复杂的具体加亮,就不赘述了.

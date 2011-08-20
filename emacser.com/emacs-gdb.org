@@ -1,0 +1,185 @@
+#+TITLE: 在Emacs中使用gdb调试程序
+* 引言
+  Emacs除了具有强大的编辑功能，还可以作为调试工具gdb的前端，对程序进行调试。使用Emacs进行调试，可以将程序的编写与调试统一到Emacs中，并利用Emacs强大的功能辅助调试，是将Emacs作为IDE使用的一项必备功能。
+
+  本文假定读者具有基本的程序调试知识，希望知道在Emacs下进行基本调试的对应操作。水平有限，欢迎拍砖。
+* 准备工作：将调试信息编译在程序中
+  要使程序能被gdb调试，需要在编译时加入调试所需的信息。如果使用gcc/g++进行编译，需要使用参数-g，如：
+#+BEGIN_SRC bash
+  gcc prog.c -g -o prog
+#+END_SRC
+  如果使用 ./confiugre && make 的编译流程，可以将使用如下方式引入-g参数：
+#+BEGIN_SRC bash
+  CFLAGS="-g" ./configure
+  make
+#+END_SRC
+  注意：不要加入任何优化参数（例如-O、-O2），不然调试时会有很灵异的现象发生……
+* 开始：开启Emacs的调试模式GUD
+** 运行gdb
+   在编译好程序后，就可以开始调试了。直接运行gdb命令
+#+BEGIN_SRC
+   M-x gdb RET
+#+END_SRC
+   在minibuffer中会出现需要执行的gdb命令。例如：
+#+BEGIN_SRC
+   gdb --annotate=3 prog
+#+END_SRC
+   如果当前目录下有可执行文件（通常恰好是需要调试的文件），gdb会在其后自动补上可执行文件，否则需要在minibuffer中补上要调试的程序文件名。
+
+   继续回车，Emacs的GUD（Grand Unified Debugger）就会关联到gdb并加载要调试的程序了。
+** gdb界面
+   启动gdb后，Emacs的界面会变成下面两种之一：
+
+#+CAPTION: GDB单窗格模式
+#+ATTR_HTML: alt="GDB单窗格模式"
+   [[file:emacs-gdb-single-window.png][GDB单窗格模式]]
+#+CAPTION: GDB多窗格模式
+#+ATTR_HTML: alt="GDB多空格模式"
+   [[file:emacs-gdb-many-windows.png][GDB多窗格模式]]
+
+   可以通过gdb-many-windows来切换这两种界面布局。
+
+   如果界面被打乱了（例如，在minibuffer中使用补全，查看帮助，重新编译程序），可以使用gdb-restore-windows来恢复界面布局。
+** 小结
+   | 命令                | 功能                  |
+   |---------------------+-----------------------|
+   | gdb                 | 启动gdb进行调试       |
+   | gdb-many-windows    | 切换单窗格/多窗格模式 |
+   | gdb-restore-windows | 恢复窗格布局          |
+
+   接下来就要开始调试程序了。
+* 调试：设置断点，控制程序流程
+** 设置、删除断点
+   首先将断点设置在要调试的地方。有两种方法：
+
+   第一种，在要设置断点的行左边的fringe上单击一下（就是文本左边与滚动条之间空出的那一块）。隐藏了fringe的朋友可以M-x fringe-mode显示它。
+
+   第二种，使用默认快捷键C-x C-a C-b, 或者 C-x <SPC>。它们都关联到命令gud-break。
+
+   无论使用哪种方法，fringe上都会在设置了断点的行上显示一个红点，表示这行设了断点：
+#+CAPTION: fringe上的断点标记
+#+ATTR_HTML: alt="fringe上的断点标记"
+   [[file:emacs-gdb-fringe-breakpoing.png][fringe上的断点标记]]
+
+   同时，在断点buffer中也会显示已有的断点信息：
+#+CAPTION: 断点buffer
+#+ATTR_HTML: alt="断点buffer"
+   [[file:emacs-gdb-breakpoint-buffer.png][断点buffer]]
+
+   要删除断点，同样有两种对应的方法：在fringe的断点上单击一下，或者使用快捷键C-x C-a C-d（对应命令gud-remove）。
+
+   可以在断点buffer上单击某个断点切换到断点所在位置。将光标移动到断点处回车也有同样的效果。
+
+   在断点buffer上按空格键可以切换断点的激活和禁用状态。
+** 运行程序
+   设置好断点后就可以运行程序了。单击工具栏上的 [[file:emacs-gdb-toolbar-go.png][Go图标]] 就开始运行了。也可以使用gud-go命令来运行。奇怪的是没有任何默认快捷键绑定。
+
+   当程序运行到断点时，程序会在断点处停下来，并自动打开停下的语句所在的代码文件。同时在fringe上在停下的语句处有三角形的指示器。
+
+#+CAPTION: 当前语句指示器
+#+ATTR_HTML: alt="当前语句指示器"
+   [[file:emacs-gdb-indicator.png][当前语句指示器]]
+
+   现在，我们来一步步运行程序。
+** 单步执行、运行到光标处
+   在调试中最常用的功能就是单步执行了。单步执行有两种：将函数调用作为一条语句执行（Next）和遇到函数时进入函数中进行调试（Step）。
+
+   要使用第一种方式，默认快捷键是C-x C-a C-n，对应命令为gud-next。也可以单击工具栏上的 [[file:emacs-gdb-toolbar-next.png][Next图标]] 。
+
+   第二种方式的默认快捷键是C-x C-a C-s，对应命令为gud-step。也可以单击工具栏上的 [[file:emacs-gdb-toolbar-step.png][Step图标]] 。
+
+   如果想跳出当前函数，可以使用命令gud-finish，默认快捷键为C-x C-a C-f，工具栏上有 [[file:emacs-gdb-toolbar-finish.png][Finish图标]] 可用。
+
+   在Emacs中还可以运行到光标所在的行。使用命令gud-until即可，默认快捷键为C-x C-a C-u。[1]
+
+   也可以直接把当前语句指示器拖到任意一行，程序会运行到那一行再停下来。
+** 继续运行程序
+   在程序中断后要继续运行程序，依然是使用gud-go命令或 [[file:emacs-gdb-toolbar-go.png][Go图标]] ，也可以使用命令gud-cont，对应快捷键为C-x C-a C-r。
+** 小结
+   | 功能               | 命令       | 默认快捷键               |
+   |--------------------+------------+--------------------------|
+   | 添加断点           | gud-break  | C-x C-a C-b 或 C-x <SPC> |
+   | 删除断点           | gud-remove | C-x C-a C-d              |
+   | 运行/继续程序      | gud-go     | 无                       |
+   | 单步执行，无视函数 | gud-next   | C-x C-a C-n              |
+   | 单步执行，进入函数 | gud-step   | C-x C-a C-s              |
+   | 跳出当前函数       | gud-finish | C-x C-a C-f              |
+   | 运行到光标所在语句 | gud-until  | C-x C-a C-u              |
+   | 继续运行程序       | gud-cont   | C-x C-a C-r              |
+   
+* 察看变量的值
+  调试的过程中免不了要查看变更的值。Emacs提供了方便地功能让我们查看变量的值。
+** 本地变量buffer
+   如果打开了gdb-many-windows，在右上角会显示Locals buffer，其中显示了当前局部变量的值。如果显示的是寄存器（Register）buffer，单击左边的Locals就可以切换到Locals　buffer了。在其中可以方便地观察到各变量的值。
+
+   如果没有打开gdb-many-windows，也可以使用gdb-display-locals-buffer来显示该buffer。
+** 察看变量值
+   遇到一些Locals里没有显示的变量，或者比较复杂的结构，就需要用到观察变量的功能了。
+
+   将光标停留在要观察的变量上，执行命令gud-watch，可以将变量加入观察列表中。默认的快捷键是C-x C-a C-w。也可以使用工具栏上的 [[file:emacs-gdb-toolbar-watch.png][Watch图标]]。
+
+   被观察的变量将在Speedbar中显示。对于复杂结构，可以单击Speedbar上的+号将其展开或收缩。在+号上按空格键也有相同的效果。[2]
+
+   有时候Emacs观察的变量不是你所想要的，一般是a->b这类的情况。这时可以将要观察的部分选中，再使用上述方法即可。
+
+#+CAPTION: 在Speedbar中观察变量
+#+ATTR_HTML: alt="在Speedbar中观察变量"
+   [[file:emacs-gdb-watch-speedbar.png][在Speedbar中观察变量]]
+** 用工具提示显示变量值
+   可以用gud-tooltip-mode开启或关闭工具提示。开启后将鼠标指针停留在变量名上时将在工具提示中显示变量的值。
+
+#+CAPTION: 在工具提示中显示变量的值
+#+ATTR_HTML: alt="在工具提示中显示变量的值"
+   [[file:emacs-gdb-tooltip-mode.png][在工具提示中显示变量的值]]
+** 小结
+   | 功能              | 命令             | 默认快捷键  |
+   |-------------------+------------------+-------------|
+   | 观察变量          | gud-watch        | C-x C-a C-w |
+   | 展开/收缩变量     |                  | <SPC>       |
+   | 开启/关闭工具提示 | gud-tooltip-mode |             |
+   
+* 输入输出
+  如果程序需要与标准输入/输出交互，那么你很可能需要用到下面要介绍的功能。
+** 单独的IO buffer
+   默认来说，程序的输入输出是在gdb buffer里显示的。这样输出信息和gdb信息混合在一起，阅读起来非常不便。这时候，你需要把输入输出单独显示在一个buffer里，方便查看。
+
+   使用gdb-use-separate-io-buffer，可以在程序代码buffer右侧新建一个IO buffer，程序对标准输入输出的操作都会重定向到这里。再执行一次该命令则会隐藏。
+
+#+CAPTION: IO buffer
+#+ATTR_HTML: alt="IO buffer"
+[[file:emacs-gdb-io-buffer.png][IO buffer]]
+
+** 输入数据
+   需要输入数据的时候，只需要在IO buffer中输入数据回车即可。已经输入的数据会被加粗，以和输出信息区分开来。
+** 重定向到文件
+   有时候我们已经准备好了用于输入的数据在文件中，以避免调试时烦琐的输入。这时候就需要在调试时进行输入输出重定向了。
+
+   要进行重定向，只能使用gdb自带的功能。在gdb buffer中输入
+#+BEGIN_SRC
+   run < data.in > data.out
+#+END_SRC
+   就可以将标准输入重定向到data.in，将标准输出重定向到data.out了。
+* 按键绑定
+  说实话，gud自带的按键绑定实在是麻烦，使用一个功能要三次组合键才行，小姆指按Ctrl都按酸了。所以一般将常用的按键绑定在方便的位置，这样才能有和另的IDE一样的快感。
+
+  以下是将F5、F7、F8分别绑定到gud-go、gud-step和gud-next的代码：
+
+#+BEGIN_SRC lisp
+(add-hook 'gdb-mode-hook '(lambda ()
+			    (define-key c-mode-base-map [(f5)] 'gud-go)
+			    (define-key c-mode-base-map [(f7)] 'gud-step)
+			    (define-key c-mode-base-map [(f8)] 'gud-next)))
+#+END_SRC
+
+之所以绑定到c-mode-base-map上，是因为我基本上在代码buffer中调试。如果要在gdb-buffer中使用的话，需要使用gud-mode-map。如果想在所有buffer上使用的话，可以绑定到全局按键中：
+#+BEGIN_SRC lisp
+(global-set-key [(f5)] 'gud-go)
+#+END_SRC
+
+* 结尾
+  有了调试功能，Emacs作为一个IDE才算是完整了。本文介绍了在Emacs下使用gdb调试的基本方法，Emacs的调试功能还远不止这些，进一步学习可参阅 [[http://www.gnu.org/software/emacs/manual/html_node/emacs/index.html][Emacs Manual]] 的 [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Debuggers.html#Debuggers][Debuggers]] 一节。
+
+  由于我也是边学边写，一定有许多不足或者错误，还请各位多多指教。
+
+[1]注：我在使用时只有光标所在的行在当前行之后并且位于同一函数内才行，否则会跳到很奇怪的地方，还请高手指教。
+[2]我在使用过程中经常出现展开没反应，或者加入新元素后才展开，运行几步才展开的情况，求高人讲解。

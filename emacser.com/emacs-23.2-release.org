@@ -1,0 +1,65 @@
+# -*- org -*-
+
+# Time-stamp: <2010-08-16 12:49:52 Monday by taoshanwen>
+
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+# 资讯, 初级
+
+GNU Emacs 23.2 发布
+
+#+BEGIN_HTML
+<img class="alignright" title="Emacs" src="screenshots/emacs.jpg"/>
+#+END_HTML
+
+** Emacs新版本发布
+北京时间2010年5月8日 上午9点17分32秒[[http://www.gnu.org/software/emacs/][Emacs官网]] [[http://lists.gnu.org/archive/html/info-gnu-emacs/2010-05/msg00000.html][发布Emacs 23.2版本]]
+#+HTML: <!--more-->
+
+** 23.2版本一些比较振奋人心的改动
+*** 新增mode
+**** CEDET终于内置到Emacs中来了, Emacs向智能化的目标又迈进了一步
+     不过Emacs内置的CEDET和CEDET的官网发布的是不一样的, 我觉得内置的可能稳定些, 但是最新的功能可能没有, 所以我还是选择了CEDET官方的版本, 具体做法就是把CEDET官方版本下载下来后, 然后把它的路径加到load-path的最前面, 这样就可以覆盖Emacs内置的了, 我在DEA中具体是这样实现的:
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defvar cedet-path (concat my-emacs-lisps-path "cedet") "Path of `cedet'")
+
+(when mswin
+  (my-add-subdirs-to-load-path cedet-path))
+</pre>
+#+END_HTML
+
+**** 增加JavaScript的mode js-mode
+**** htmlfontify
+     和htmlize类似的一个elisp包, 目前还不知道它比htmlize好在哪里
+
+**** 增加MPD的前端mpc.el
+     MPD是linux下的音乐播放器的daemon
+     
+*** 所有的形似default-FOO的变量全部被声明为"已不再使用"
+    这些变量的作用是保存FOO的缺省值, 比如default-tab-width保存了tab-width变量的缺省值
+
+*** 一个buffer最大的容量由原来的256MB变成512MB
+
+*** 增加变量`kill-do-not-save-duplicates'
+    当它为t的时候, kill ring中将不会保存连续的kill的文本
+
+*** 增加对Gconf的支持
+    GConf是在基于GNOME2的系统中用于应用程序属性配置和管理的工具，完成类似于Windows操作系统中注册表的功能，有了对Gconf的支持，Emacs就可以使用系统的字体了。
+    
+*** 增加变量`tab-always-indent'
+    该值为:
+    + t, 按TAB键始终格式化当前行
+    + nil, 当光标在行首或者当该行已经格式化, 而且光标处于第一个非空字符上面的时候, 按TAB键会格式化当前行, 否则, 就会插入一个TAB字符
+    + 'complete, 按TAB键会首先去格式化当前行, 如果当前行已经格式化好了的话, 就会去尝试补全.
+    对每个编程语言而言, 可能会有自己的变量来达到上述的功能, 比如c-mode里面就是变量`c-tab-always-indent'来控制的, 这时候, 对c-mode而言, tab-always-indent变量就不起作用了.
+    总之, 这是一个挺不错的功能.
+
+*** shell mode
+    - 23.2以前的版本M-r都是绑定到comint-previous-matching-input上去的, 不是很好用, 新版本绑定到comint-history-isearch-backward-regexp上去了, 和bash下的C-r比较类似了, 挺好用的.(其他的comint modes也是这样了, 比如gud-mode)
+    - ansi-color在Shell mode下缺省启用了
+
+*** VC mode中的Diff和log操作在Dired buffer中也可以使用了
+更详细的Emacs 23.2的改动请看[[http://www.gnu.org/software/emacs/NEWS.23.2][这里]]。
+
+[[http://emacser.com/dea.htm][DEA]]已更新支持Emacs 23.2。

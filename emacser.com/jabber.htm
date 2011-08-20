@@ -1,0 +1,59 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-11 16:17:13 Thursday by ahei" -->
+
+<!-- Emacs的Jabber客户端 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#WaterLin" target="_blank"><span style="color: #0000ff;"><b>Water Lin</b></span></a>
+
+<img class="alignright" title="Jabber" src="screenshots/jabber-logo.png"/>
+
+<p>
+通过使用 <a href="http://emacs-jabber.sourceforge.net/" target="_blank">Jabber</a> 插件，可以在 Emacs 里进行即时通讯聊天，<a href="http://www.emacswiki.org/emacs/JabberEl" target="_blank">相关截图可以在 Emacs-wiki 上看到</a>，怎么样，很不错吧？！我们可以通过 Jabber 来在 Emacs 里使用若干即时通讯工具，这里就以 <a href="http://www.emacswiki.org/emacs/GoogleTalk" target="_blank">Gtalk</a> 为例简单说明一下 Jabber 的基本使用方法。<!--more-->
+</p>
+<p>
+Ubuntu/Debian 上可以直接从源里安装 emacs-jabber 的软件包。
+</p>
+<p>
+例如，我要配置 Google Talk 的话，可以在 .emacs 里用下面的方法来配置：
+</p>
+
+<pre lang="lisp" line="1">
+(setq jabber-account-list
+      '(("waterlin.org@gmail.com"
+         (:network-server . "talk.google.com")
+         (:connection-type . ssl))))
+</pre>
+
+<p>
+配置好了以后，可以用 M-x jabber-connect 来登陆，它会让你输入 JID，你直接输入你设置好的邮箱名即可。
+</p>
+<p>
+登录成功后，Emacs 会有一个 *-jabber-roster-* 的 buffer，从里面就能找到你想聊天的人一起聊天。
+</p>
+<p>
+和某个人聊天的话，就用 M-x jabber-chat-with 命令，输入某个人的帐号，或者直接从 *-jabber-roster-* buffer 里找到某人的帐号并按回车，就会出现 *-jabber-chat-:-person-* 这样的一个 buffer。在这个 Buffer 里，你就可以和他/她聊天了。如果对方有消息过来，Emacs 会在 minibuffer 里提示对方的名字，提示你有新的消息。
+</p>
+<p>
+聊天时，用回车就是发送消息，用 C-j 就是新建一行输入消息。
+</p>
+<p>
+默认情况下，你会显示为在线状态，如果需要修改状态，例如修改为 away，可以用命令 M-x jabber-send-presence 或快捷键 C-x C-j C-p 来切换状态。
+</p>
+<p>
+其它常用命令：
+</p>
+<ul>
+<li>
+要退出用 M-x jabber-disconnect 命令即可；
+</li>
+<li>
+要添加某人为好友，可以用命令 <a href="http://emacs-jabber.sourceforge.net/manual-0.7.1/Presence-subscription.html#Presence-subscription" target="_blank">M-x jabber-send-subscription-request</a>；
+</li>
+<li>
+用命令 M-x jabber-customize 可以对 jabber 进行基本的配置。
+</li>
+</ul>
+
+<p>这个玩意不错，尤其是作为 Linux 下面的 Gtalk 客户端挺好的，不仅能聊天，同时也支持在 Gmail 里保存聊天记录。
+</p>

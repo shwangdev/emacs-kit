@@ -1,0 +1,15 @@
+keywords:
+ahei, 阿黑, emacs, ide, screenshot, 截图, 补全, auto complete, 代码补全, term, select-buffer, 查看buffer, ubuntu, windows, putty, ediff, 比较文件, 代码折叠, mode-line, 状态栏, 翻译, hippie-expand, 配色, icicle, icicles, doremi, palette, 调色板, face, 颜色, emacser, color, theme, 皮肤, 光标, cursor, cursor-chg, cursor-change, 自动完成, cedet,semantic,senator,imenu,ede,cogre, eieio, speedbar, srecode, control, ctrl, caps lock, 插件, plugin, snippet, yasnippet, highlight-symbol,highlight,eclipse, 浏览器, browser, 二分调试法, ssh, tsocks, sockscap, genproxy, LD_PRELOAD, emacser.com,paypal, godaddy, 叶文斌, 域名转发, 域名转向, scratch, post-command-hook, lambda, lambda表达式, keymap, process sentinel, svn-status, textmate, akismet, wp-syntax, keychain, ssh-agent, expect, ssh-copy-id, readlink, mapreduce, pulse, 淡入淡出, highlight-tail, weblogger, emms, jabber, 看文档, 王垠, pluskid, c++, bigclean, laihj, meteor, meteor1113, shell909090, vvoody, waterlin, company-mode, irc, erc, gud, gdb, org, org mode, linum+, linum-plus, 行号, 鼠标, 王纯业, ann, ann77, eval-after-load, autoload, emaci, daemon, python, calc, zjl-c-hl, artist-mode, mew, email, 邮件客户端, 版衫, 工具栏, doxymacs
+
+footer.php:
+<center>
+<br><br><br><br>
+Copyright (C) 2009 <a href="http://ahei.yo2.cn" target="_blank">ahei</a><br>
+qq/msn/email: <a href="mailto:ahei0802@126.com">ahei0802@126.com</a><br>
+<script language="javascript" src="http://count23.51yes.com/click.aspx?id=238764785&logo=1" charset="gb2312"></script>
+
+<script language="javascript" type="text/javascript" src="http://js.users.51.la/3348284.js"></script>
+<noscript><a href="http://www.51.la/?3348284" target="_blank"><img alt="&#x6211;&#x8981;&#x5566;&#x514D;&#x8D39;&#x7EDF;&#x8BA1;" src="http://img.users.51.la/3348284.asp" style="border:none" /></a></noscript>
+</center>
+
+Emacs中文网致力于让更多的人知道Emacs, 让更多的人知道Emacs的强大, 为广大的Emacser提供更好的学习资料. 

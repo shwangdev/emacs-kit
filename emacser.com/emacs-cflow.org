@@ -1,0 +1,86 @@
+#+TITLE: Emacs and Cflow
+#+AUTHOR: Yang, Ying-chao
+#+OPTIONS: ^:nil
+
+介绍 Emacs 中使用cflow制作函数的调用树
+
+*  Introduction to cflow
+
+GNU cflow analyzes a collection of C source files and prints a graph, charting control flow within the program.
+
+
+GNU cflow is able to produce both direct and inverted flowgraphs for C sources. Optionally a cross-reference listing can
+be generated. Two output formats are implemented: POSIX and GNU (extended).
+
+
+Input files can optionally be preprocessed before analyzing.
+
+The package also provides Emacs major mode for examining the produced flowcharts in Emacs.
+
+以上内容取自 cflow 的网站: [[http://www.gnu.org/software/cflow/manual/html_node/Intro.html#Intro]]。
+
+* Emacs & cflow
+
+  cflow 的代码包中提供了cflow-mode.el (cflow-1.3/elisp/cflow.el)，  该文件提供了 emacs 的 cflow-mode，
+  用于显示 cflow 输出的内容，但该文件中并未提供自动生成指定函数的 call tree
+  的功能，用起来多少有点不方便。
+
+  下面是一个简单的 elisp 函数，通过该函数可以为指定的函数生成调用树。
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(require 'cflow-mode)
+(defvar cmd nil nil)
+(defvar cflow-buf nil nil)
+(defvar cflow-buf-name nil nil)
+
+(defun yyc/cflow-function (function-name)
+  "Get call graph of inputed function. "
+  ;(interactive "sFunction name:\n")
+  (interactive (list (car (senator-jump-interactive "Function name: "
+                                                    nil nil nil))))
+  (setq cmd (format "cflow  -b --main=%s %s" function-name buffer-file-name))
+  (setq cflow-buf-name (format "**cflow-%s:%s**"
+                               (file-name-nondirectory buffer-file-name)
+                               function-name))
+  (setq cflow-buf (get-buffer-create cflow-buf-name))
+  (set-buffer cflow-buf)
+  (setq buffer-read-only nil)
+  (erase-buffer)
+  (insert (shell-command-to-string cmd))
+  (pop-to-buffer cflow-buf)
+  (goto-char (point-min))
+  (cflow-mode)
+  )
+</pre>
+#+END_HTML
+
+
+  函数中使用了 CEDET 提供的 senator-jump-interactive 用于实现函数名的自动补全，如果你的机器上没有 CEDET， 那么就把
+  (interactive "sFunction name:\n") 的注释去掉，而将后面的那句话注释掉即可。
+
+  用法很简单，将上面的代码添加到 ~/.emacs 中后，重新载入配置文件，然后打开一个 C 文件，
+  M-x， 输入： yyc/cflow-function ， 随后在 Mini-buffer 中输入函数名字，
+  回车，即可生成一个新的 buffer, 并在其中填写了生成的调用树。
+
+  如下图所示：
+  #+BEGIN_HTML
+  [caption width="150" caption="cflow"]<a href="screenshots/cflow.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_cflow.png" height="150"/></a>[/caption]
+  #+END_HTML
+
+
+ 在调用树中，还可以通过键盘从调用树中跳转到相应的源代码中，具体可以参阅 cflow
+ 提供的 cflow.el。
+
+ 这样， cflow 配置 GNU Global 和 cedet ， 代码的阅读和理解效率会大大提高。
+
+
+
+
+* Links
+
+  *1.* cflow 网址： [[http://www.gnu.org/software/cflow]]
+
+  *2.* cflow 下载地址： [[http://mirrors.kernel.org/gnu/cflow/cflow-1.3.tar.bz2]]
+
+  *3.* cflow Documentation: [[http://www.gnu.org/software/cflow/manual/html_node/index.html]]

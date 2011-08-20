@@ -1,0 +1,139 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-04-12 14:37:32 Monday by ahei> -->
+
+<!-- Emacs才是世界上最强大的IDE － 高亮光标处单词 -->
+
+<img class="alignright" title="Eclipse" src="screenshots/eclipse.png"/>
+
+Eclipse是一个比较不错的IDE(当然与Emacs比起来还是差不少, :)), 现在用它的人挺多的, 用过的用户应该都会知道, 在Eclipse里面, 当把光标移到一个变量, 或者方法, 或者类名, 或者类型名上面的时候, Eclipse会把这个符号的所在的作用域中的所有这个符号都高亮, 比如局部变量abc, 它就会把当前作用域内所有的局部变量, 就像下面这个样子:<!--more-->
+[caption width="150" caption="eclipse中高亮光标处单词"]<a href="screenshots/highlight-symbol//eclipse-highlight-symbol.png" rel="lightbox"><img title="eclipse highlight symbol" src="screenshots/highlight-symbol/thumbs/thumbs_eclipse-highlight-symbol.png" alt="eclipse中高亮光标处单词" width="150" height="150" /></a>[/caption]
+但是它并不会高亮与它同名的但是不同类型的单词, 比如它并不会高亮字符串"abc", 如上图所示. 它也不会高亮和它不在同一作用域内的单词, 比如上图中的下面那个大括号扩住的代码块内的abc, 虽然和上面的代码块的abc同类型, 但是不是同一作用域, Eclipse也不会高亮它, 甚至, Eclipse都不会高亮当前光标处的单词的重载方法(这点感觉不太方便), 如下图所示:
+[caption width="150" caption="eclipse中高亮光标处单词"]<a href="screenshots/highlight-symbol/eclipse-highlight-symbol2.png" rel="lightbox"><img title="eclipse highlight symbol" src="screenshots/highlight-symbol/thumbs/thumbs_eclipse-highlight-symbol2.png" alt="eclipse中高亮光标处单词" width="150" height="150" /></a>[/caption]
+总之, Eclipse只会高亮当前作用域内和当前光标处单词完全是同一个语法个体的单词. 
+
+那么Emacs中是否有类似的功能呢, 当然有! <a href="http://nschum.de/src/emacs/highlight-symbol/" target="_blank">highlight-symbol</a>这个包就我们实现了这个功能, 我们先来瞧瞧它长啥样:
+[caption width="150" caption="用highlight-symbol高亮光标处单词"]<a href="screenshots/highlight-symbol/highlight-symbol.png" rel="lightbox"><img title="highlight symbol" src="screenshots/highlight-symbol/thumbs/thumbs_highlight-symbol.png" alt="用highlight-symbol高亮光标处单词" width="150" height="150" /></a>[/caption]
+上图中那些灰色背景, 蓝色前景的"defconst"就是用highlight-symbol高亮的，漂亮吧，:).
+
+highlight-symbol与Eclipse的高亮功能有哪些不同点呢?
+<ol>
+  <li>它除了自动高亮, 即随着光标的移动自动高亮所有当前光标下的单词, 还可以手动高亮, 比如我先高亮所有的abc, 然后再高亮所有的def, 还可以高亮所有的ghi, 还可以..., 总之, 可以无限高亮所有单词, 就像下面这样:
+    [caption width="150" caption="emacs中用highlight-symbol高亮多个单词"]<a href="screenshots/highlight-symbol/highlight-multisymbol.png" rel="lightbox"><img title="highlight multisymbol" src="screenshots/highlight-symbol/thumbs/thumbs_highlight-multisymbol.png" alt="emacs中用highlight-symbol高亮多个单词" width="150" height="150" /></a>[/caption]</li>
+  </li>
+  <li>它不是以语法个体进行高亮的, 它仅以单词进行高亮, 即: 假如当前光标下的abc是int型, 它高亮的时候, 同时会高亮字符串"abc", 这样既有好处, 也有坏处, 好处就是我这样一眼能看清楚有多少当前光标下这样的单词, 而且不区分作用域(从上面的图也可以看出来), 因为它不做语法分析, 坏处就是不同类型的单词混在了一起. </li>
+  <li>它可以高亮任意类型的文件, c/c++/java/ruby, 等等, 包括text, 我就用它来高亮text. 看看这个:
+    Eclipse恐怕只支持很少几种. </li>
+  <li>它可以在所有相同的单词之间跳转, 回到前一个, 退到后一个, 非常方便, 还可以只在一个函数内进行跳转. </li>
+  </ol>
+总之, 有优点也有缺点, 不过优点明显多于缺点.
+
+我觉得一个好的高亮当前光标处单词的工具应该把Eclipse和highlight-symbol的优点结合起来, 既可以根据语法进行高亮, 语法高亮的时候还可以由用户控制是否区分作用域, 还可以根据单词外形进行高亮.
+
+CEDET里有一个根据语法进行高亮的minor mode，想了解的话请看<a href="http://emacser.com/cedet.htm#sec-4.1.4" target="_blank">这里</a>的semantic-idle-tag-highlight-mode。
+
+下面我来讲讲highlight-symbol的使用.
+
+C-c M-H高亮当前光标下的单词, C-c M-R取消所有单词的高亮, C-c M-N移到下一个高亮, C-c M-P则移到上一个高亮(这两个命令和vi中的*和#命令功能一样，当激活了emaci-mode后，按n和p即可，这样用起来更方便了，具体参见<a href="emaci.htm" target="_blank">强大的文件阅读器 － Emaci</a>), C-c M-n在函数内移到下一个高亮, C-c M-p在函数内移到上一个高亮, C-c r对当前光标下的单词进行替换. 使用很简单吧.
+
+注意：highlight-symbol与color moccur以及<a href="w3m.htm" target="_blank">w3m</a>冲突，当启用了`highlight-symbol-mode'后，moccur和w3m自己的颜色高亮就没了。
+
+<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/highlight-symbol-settings.el" target="_blank">这里</a>有我的highlight-symbol的配置文件, 配置如下:
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2010-04-12 11:38:25 Monday by ahei>
+
+;; emacser.com/highlight-symbol.htm
+
+(require 'util)
+(require 'highlight-symbol)
+
+(when window-system
+  (am-add-hooks
+   '(emacs-lisp-mode-hook lisp-interaction-mode-hook java-mode-hook
+                          c-mode-common-hook text-mode-hook ruby-mode-hook html-mode-hook
+                          sh-mode-hook Info-mode-hook)
+   'highlight-symbol-mode-on))
+
+(defun highlight-symbol-settings ()
+  "Settings for `highlight-symbol'."
+
+  (setq highlight-symbol-idle-delay 0.5)
+
+  (defun highlight-symbol-mode-on ()
+    "Turn on function `highlight-symbol-mode'."
+    (if window-system
+        (highlight-symbol-mode 1)))
+
+  (defun highlight-symbol-mode-off ()
+    "Turn off function `highlight-symbol-mode'."
+    (highlight-symbol-mode -1))
+
+;;;###autoload
+  (define-globalized-minor-mode global-highlight-symbol-mode highlight-symbol-mode highlight-symbol-mode-on)
+
+;;;###autoload
+  (defun highlight-symbol-jump (dir)
+    "Jump to the next or previous occurence of the symbol at point.
+DIR has to be 1 or -1."
+    (let ((symbol (highlight-symbol-get-symbol)))
+      (if symbol
+          (let* ((case-fold-search nil)
+                 (bounds (bounds-of-thing-at-point 'symbol))
+                 (offset (- (point) (if (< 0 dir) (cdr bounds) (car bounds)))))
+            (unless (eq last-command 'highlight-symbol-jump)
+              (push-mark))
+            (let ((target
+                   (save-excursion
+                     ;; move a little, so we don't find the same instance again
+                     (goto-char (- (point) offset))
+                     (re-search-forward symbol nil t dir))))
+              (if target
+                  (goto-char (+ target offset))
+                (message (format "Reach %s" (if (> dir 0) "bottom" "top"))))
+              (setq this-command 'highlight-symbol-jump)))
+        (error "No symbol at point"))))
+  
+  ;; I bind "C-x w" to `copy-sexp'
+  (eal-define-keys
+   'hi-lock-map
+   `(("C-x w" nil)))
+
+  (eal-define-keys
+   `(emacs-lisp-mode-map lisp-interaction-mode-map java-mode-map
+                         c-mode-base-map text-mode-map ruby-mode-map html-mode-map)
+   `(("C-c M-H" highlight-symbol-at-point)
+     ("C-c M-R" highlight-symbol-remove-all)
+     ("C-c M-N" highlight-symbol-next)
+     ("C-c M-P" highlight-symbol-prev)
+     ("C-c r"   highlight-symbol-query-replace)
+     ("C-c M-n" highlight-symbol-next-in-defun)
+     ("C-c M-p" highlight-symbol-prev-in-defun))))
+
+(defun highlight-symbol-settings-for-emaci ()
+  "`highlight-symbol' settings for `emaci'."
+  (eval-when-compile (require 'cl))
+  
+;;;###autoload
+  (defun emaci-n ()
+    "Command bind to key n."
+    (interactive)
+    (if (edebug-active)
+        (edebug-next-mode)
+      (if (equal major-mode 'gud-mode)
+          (call-interactively 'gud-next)
+            (call-interactively 'highlight-symbol-next))))
+
+  (define-key-list
+    emaci-mode-map
+    `(("p" highlight-symbol-prev))))
+
+(eval-after-load "emaci"
+  `(highlight-symbol-settings-for-emaci))
+
+(eval-after-load "highlight-symbol"
+  '(highlight-symbol-settings))
+
+(provide 'highlight-symbol-settings)
+</pre>

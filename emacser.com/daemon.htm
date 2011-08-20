@@ -1,0 +1,83 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-30 17:30:10 Friday by ahei" -->
+
+<!-- 使用Emacs daemon -->
+
+<!-- 快速启动, 初级 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#tigersoldier" target="_blank"><span style="color: #0000ff;"><b>Tiger Soldier</b></span></a>
+
+<h3>什么是 Emacs daemon</h3>
+关于Emacs有一个很著名的笑话，就是Emacs = Emacs Makes A Computer Slow。Emacs启用慢是一个人尽皆知的事实。由于启动时要加载大量的脚本和插件，使得Emacs在启动时往往需要数秒之久。因此我在进行一些快速简单的任务，如svn commit时，都是使用nano或者vim来进行的。<!--more-->
+Emacs daemon就是为了这个而诞生的。它将Emacs变成了一个C/S模型&mdash;&mdash;只需要启动一个服务器在后台作为守护进程（daemon）跑着，之后启动的每个emacs都是一个客户端，它连接上服务器进行工作。这样一来，只要在启动服务器时运行初始化脚本，客户端启动无需运行脚本，实现启动时间从Firefox到Chrome的转变。
+
+<h3>使用 Emacs daemon</h3>
+要使用Emacs daemon，至少需要Emacs 23。它提供了一个emacsclient程序，用于启动客户端。
+有客户端就必然要有服务端。要启动一个daemon，需要在运行emacs时加入一个--daemon参数。幸运的是，我们不用手动启动服务端，而是可以利用emacsclient的-a参数。emacsclient的-a参数用于指定连接不上服务器时使用的别的编辑器（alternate editor），当把这项留空时，它会自动启动服务端。如果不想指定-a，也可以将ALTERNATE_EDITOR环境变量设为&quot;&quot;。
+除了-a参数，emacsclient还要手工指定使用终端还是X来启动。要从终端启动，需要使用-t参数：
+<pre lang="bash">
+emacsclient -t -a ""</pre>
+从X启动则是-c：
+<pre lang="bash">
+emacsclient -c -a ""</pre>
+
+<h3>方便些，再方便些</h3>
+每次都要输入上面那些命令太烦了，不符合*nix的终极目标&mdash;&mdash;偷懒
+首先把终端版本设一个alias。编辑~/.bashrc，在最后加入
+<pre lang="bash" line="1">
+#用ec来快速启动emacs client
+alias ec='emacsclient -t -a ""'
+#现在可以将emacs设为默认编辑器啦:P
+export EDITOR="ec"
+</pre>
+以后在终端下输入ec就可以启动emacs的终端客户端了:)
+在X下，我习惯用gnome-do来启动程序。因此最方便的方法就是建立一个菜单项，名叫Fastmacs，内容自然就是X模式启动emacsclient的命令啦
+
+<h3>配置，还是配置</h3>
+如果在.emacs里对X相关的选项（字体什么的）直接进行设置，那么会发现用emacsclient启动时，这些设置都失效了。这是因为这些设置是在X下的frame创建时才有效的，而启动服务器的时候是没有创建frame的。
+解决方法有两种，一种是使用after-make-frame-functions这个hook，在创建一个frame之后才进行设置。代码如下
+<pre lang="lisp" line="1">
+(defun frame-setting ()
+    (set-frame-font "文泉驿等宽微米黑 8")
+    (set-fontset-font "fontset-default"
+		      'gb18030 '("文泉驿等宽微米黑" . "unicode-bmp")))
+
+(if (and (fboundp 'daemonp) (daemonp))
+    (add-hook 'after-make-frame-functions
+	      (lambda (frame)
+		(with-selected-frame frame
+		  (frame-setting))))
+  (frame-setting))
+</pre>
+需要判断是否以daemon模式启动，分别进行处理
+另一种方法是设置window-system-default-frame-alist，直接设置参数的默认值
+<pre lang="lisp" line="1">
+(setq window-system-default-frame-alist
+      '(
+        ;; if frame created on x display
+        (x
+	 (menu-bar-lines . 1)
+	 (tool-bar-lines . nil)
+	 ;; mouse
+	 (mouse-wheel-mode . 1)
+	 (mouse-wheel-follow-mouse . t)
+	 (mouse-avoidance-mode . 'exile)
+	 ;; face
+	 (font . "文泉驿等宽微米黑 8")
+	 )
+        ;; if on term
+        (nil
+	 (menu-bar-lines . 0) (tool-bar-lines . 0)
+	 ;; (background-color . "black")
+	 ;; (foreground-color . "white")
+	 )
+	)
+      )
+</pre>
+可以设置的参数见Emacs Lisp Reference &gt; Frames &gt; Frame Parameters
+推荐使用第二种方法，启动客户端时直接就使用所设置的字体了
+
+<h3>参考文章</h3>
+<a href="http://www.wanglianghome.org/blog/2009/01/customization-tips-for-emacs-daemon.html" target="_blank">http://www.wanglianghome.org/blog/2009/01/customization-tips-for-emacs-daemon.html</a>
+<a href="http://jackycxh.blog.35.cn/2009/07/22/emacs-daemon-and-font/" target="_blank">http://jackycxh.blog.35.cn/2009/07/22/emacs-daemon-and-font/</a>

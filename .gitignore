@@ -1,7 +1,6 @@
 loaddefs.el*
 backups/*
 auto-save-list
-custom.el
 *elc
 places
 url/cookies
@@ -17,7 +16,6 @@ oddmuse/*
 image-dired/
 elim/
 elpa-to-submit/nxhtml/etc/schema/xhtml-loader.rnc~
-session*
 tramp
 \#*
 history

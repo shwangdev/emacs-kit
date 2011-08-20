@@ -1,0 +1,29 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-06-09 13:02:36 Wednesday by ahei" -->
+
+<!-- 在Emacs中使用vi的*和#命令 -->
+
+<img class="alignright" title="vim" src="screenshots/vim.png"/>
+
+vi里有个很好用的功能就是, 在命令模式下, 按*向前搜索下一个单词, 按#向后搜索后一个单词. 那Emacs下有没有这样的功能呢? 抱歉, 还真没有。也许你会说C-s C-w不是可以解决吗？但是这个方法需要光标在单词起始处，光标在单词中间的话就不行了。不过不用怕, 有elisp, 啥不能实现呢? 代码如下:<!--more-->
+<pre lang="lisp" line="1">
+(defun isearch-cur-word (fun)
+  "ISearch current word use function FUN."
+  (let ((cur-word (current-word)))
+    (if (not cur-word)
+        (message "No word under cursor.")
+      (call-interactively fun)
+      (isearch-yank-string cur-word))))
+
+(defun isearch-forward-cur-word (&optional backward)
+  "`isearch-forward' current word."
+  (interactive "P")
+  (let ((fun (if backward 'isearch-backward 'isearch-forward)))
+    (isearch-cur-word fun)))
+</pre>
+原理很简单, 首先用current-word函数得到当前光标下的单词, 然后调用对应的isearch命令, 最后用isearch-yank-string把当前单词复制到搜索串里, 达到搜索当前单词的目的. C-u isearch-forward-cur-word则向后搜索当前单词.
+
+上面实现的是增量搜索当前单词, 那怎么像vi中那样直接到达下一个单词, 而不启动增量搜索呢?
+
+我曾写过一篇文章<a href="http://emacser.com/highlight-symbol.htm" target="_blank">Emacs才是世界上最强的IDE － 高亮光标处单词</a>, 这个用于高亮光标处单词的elisp包正好有个上面所说的功能, 命令是highlight-symbol-next和highlight-symbol-prev, 在<a href="emaci.htm" target="_blank">emaci-mode</a>下我把它们绑定到了n和p键上去了, 非常的方便.

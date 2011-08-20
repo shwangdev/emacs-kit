@@ -1,0 +1,102 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-05-17 14:01:33 Monday by ahei" -->
+
+<!-- 用weblogger写WordPress博客 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#vvoody" target="_blank"><span style="color: #0000ff;"><b>vvoody</b></span></a>
+
+<img class="alignright" title="WordPress" src="screenshots/wordpress.jpg" width="100" height="100"/>
+
+此文让你不用登录 wordpress 的后台程序撰写博客，而是利用 Emacs !
+源起看到<a href="http://eexpress.blog.ubuntu.org.cn/" target="_blank">eexpress</a>用 vim 来写 wordpress，所以想着 Emacs 有没有此类插件。Google 了一下，果然有 weblogger 这个一个库。看了下别的资料，在此简单整理下使用方法。<!--more-->
+
+本文只针对 WordPress 用户，虽然介绍可以使用 Blogger, MetaWeblog 等博客程序，还请读者自己尝试。测试环境 Emacs 23.1.1。
+
+<strong>一、安装过程：</strong>
+1. 下载<a href="http://vvoody.org/pub/howto/emacs/weblogger.el" target="_blank">weblogger.el</a> 和 <a href="http://vvoody.org/pub/howto/emacs/xml-rpc.el" target="_blank">xml-rpc.el</a>
+
+这两个文件我已经打过补丁，分别来自<a href="http://blog.nethazard.net/emacs-weblogger-mode-with-wordpress-tags-support/" target="_blank">Gabriel Saldaña</a>、<a href="http://zeze0556.tk/2009/12/08/emacs%E5%86%99wordpress%E7%9A%84%E4%B8%80%E4%B8%AA%E5%B0%8F%E8%A1%A5%E4%B8%81/" target="_blank">rix</a>和<a href="http://wdicc.com/use-emacs-publish-your-blog/" target="_blank">wd</a>，感谢他们。现在weblogger可以正常使用分类、Tags、html、permlink。
+
+2. 把这个两个 el 文件放到你的 Emacs 启动路径里，比如我的是：~/.emacs.d/site-lisp
+
+3. 在 ~/.emacs 里添加一句：(require 'weblogger)
+
+<strong>二、连接到你的 WordPress 博客：</strong>
+1. 先得设置你的博客，M-x weblogger-setup-weblog。
+
+2. Server Endpoint (URL): http://vvoody.org/blog/xmlrpc.php
+WordPress 的博客必须填 xmlrpc.php。
+
+3. 输入用户名密码后，Emacs 就会提示你连接成功，会将你博客的信息添加在 .emacs 文件末尾。
+PS: 千万别把空间的用户名和博客的用户名搞混，我就是因为这个登了半天也上不去。
+
+<strong>三、写博客：</strong>
+1. M-x weblogger-select-configuration，选择你刚才设置的配置信息，否则默认是 openweblog.com。以后每次要登录你的博客都要使用这个命令。
+
+2. M-x weblogger-start-entry
+初始有 Subject, Categories, Permlink, Tags, From, Newsgroup 和 --text follow this line--。
+Categories就是文章分类，这个分类必须是在你的博客中已经存在的，否则你新创建一个最后系统还是会认成 Uncategorized。编辑状态见下图：
+[caption width="150" caption="用weblogger写WordPress博客"]<a href="screenshots/weblogger.png" rel="lightbox"><img src="screenshots/thumbs/thumbs_weblogger.png"/></a>[/caption]
+
+3. 当你写完要发表时用命令：M-x weblogger-publish-entry (C-x C-s)来发表你的文章。如果你暂时不想发表的话，那么 M-x weblogger-save-entry 则是将你文章保存到服务器上，下次可以继续编辑。
+
+weblogger 会自动保存你的博客在 ~/Mail/drafts 里。
+
+<strong>四、编辑删除以前的文章：</strong>
+你可能想发表之前保存的草稿，或者不满意已经发表的文章，需要修改或者删除，那么你需要用到：M-x weblogger-fetch-entries (之前你仍需要 M-x weblogger-select-configuration ，输入密码后登录)。
+
+fetch 来的第一篇文章一般是草稿，如果没有草稿则是最新发表的文章。当然，你可以使用 M-x weblogger-prev-entry (C-c C-p) 或 M-x weblogger-next-entry (C-c C-n) 来载入前/后一篇文章。
+
+编辑好了一篇文章/草稿后，M-x weblogger-publish-entry (C-x C-s)就可以发表了。若要删除某篇文章，则是切换到那篇文章，然后执行 M-x weblogger-delete-entry (C-c C-k)
+
+/**************************************************/
+基本的操作就是这么些，weblogger 还提供了一些文章模板什么的，这些大家可以自己尝试。
+
+下面列出在 weblogger 模式下可用的标记：
+粗体 &lt;strong&gt;blod&lt;/strong&gt;
+斜体 &lt;em&gt;italic&lt;/em&gt;
+链接 &lt;a href="http://www.xxx.com/" mce_href="http://www.xxx.com/"&gt;aLink&lt;/a&gt;
+贴图 &lt;img src="http://www.yyy.com/zzz.jpg" mce_src="http://www.yyy.com/zzz.jpg" alt="zzz.jpg" /&gt;
+列表
+&lt;ul&gt;&lt;li&gt;item_1&lt;/li&gt;&lt;li&gt;item_2&lt;/li&gt;&lt;/ul&gt;
+
+&lt;ol&gt;&lt;li&gt;item_1&lt;/li&gt;&lt;li&gt;item_2&lt;/li&gt;&lt;/ol&gt;
+
+代码 ── &lt;code&gt;int main()&lt;/code&gt;
+引用 ── &lt;blockquote&gt;aQuote&lt;/blockquote&gt;
+更多 ── &lt;!--more--&gt;many many words...
+'&lt;' ── &amp;lt;
+'&gt;' ── &amp;gt;
+
+以上代码就是 WordPress 中的代码编辑方式中插入的代码，可以直接在
+weblogger 模式里用。
+
+<strong>参考：</strong>
+<ul>
+<li>M-x weblogger TAB 列出所有的命令，或者菜单栏上也有若干;</li>
+<li>weblogger.el 里的注释;</li>
+<li><a href="http://wangcong.org/blog/?p=304" target="_blank">WANG Cong</a></li>
+<li><a href="http://jwickers.wordpress.com/2007/09/20/webloggerel-enhanced/" target="_blank">weblogger.el Enhanced!</a></li>
+<li><a href="http://anupamsg.elementfx.com/blog/2008/01/02/using-emacs-and-markdown-for-blogging/" target="_blank">Using Emacs and Markdown for Blogging </a></li>
+<li><a href="http://www.emacswiki.org/cgi-bin/wiki/WebloggerMode" target="_blank">WebloggerMode</a></li>
+<li><a href="http://savannah.nongnu.org/projects/emacsweblogs" target="_blank">emacsweblogs</a></li>
+<li><a href="http://blog.nethazard.net/emacs-weblogger-mode-with-wordpress-tags-support/" target="_blank">Emacs weblogger mode with Wordpress tags support</a></li>
+<li><a href="http://zeze0556.tk/2009/12/08/emacs%E5%86%99wordpress%E7%9A%84%E4%B8%80%E4%B8%AA%E5%B0%8F%E8%A1%A5%E4%B8%81/" target="_blank">emacs写wordpress的一个小补丁</a></li>
+</ul>
+<span style="color: #0000ff;">注</span>：如果你发现撰写时候的格式和最终发布显示的格式不一样，建议关闭auto-fill-mode. 另外, 编辑已发布的文章并再次发布有时间问题，快8小时．
+<strong>本文即在 weblogger 模式下编辑。</strong>
+
+--------------------补充--------------------
+weblogger 默认是读取前 20 篇文章，默认的连接服务器是 openweblog.com。这些都可以通过 M-x customize-group 里的 weblogger 里修改。对应的项目分别是：
+Weblogger Max Entries Ring
+Weblogger Server URL
+
+--------------------更新-2010-03-11--------------------
+感谢wd的<a href="http://wdicc.com/use-emacs-publish-your-blog/" target="_blank">patch</a>，现在weblogger支持添加permlink，"Keywords"、"Summary"分别改成"Categories"、"Tags"
+打了两个patch后支持分类、Tags、html标记;
+weblogger 1.2 不支持categories的slug，也就是如果你建立了一个类别“工作”，并给他取了别名”work“，那么在weblogger里只能用”工作“;
+weblogger 1.2 不支持tags;
+
+——————–更新-2010-03-13——————–
+再次感谢wd的patch，修正了fetch文章后再次发布的时间问题

@@ -1,0 +1,45 @@
+# -*- org -*-
+
+# Time-stamp: <2010-08-04 10:15:59 Wednesday by taoshanwen>
+
+#+OPTIONS: ^:nil author:nil timestamp:nil creator:nil toc:nil
+
+关于用Org Mode写文章
+
+本站好多作者写文章都是用org写的，由于网站是用WordPress搭建的，org生成的html还需要做一些改动才能比较好的在WordPress里显示出来，我说一下大家用org写文章的时候要注意的地方。(用Org写的文章直接发Org源文件给我就可以了，不需要把生成的html也发给我; 作者时间有限的话可以不用管下面这些，我来改) 另外，用其他工具比如Muse写文章的同志也可以参考一下。
+
+** 不要用"*"
+   由于WordPress的文章标题是h2，而"*"生成的html也是h2，在WordPress里面显示出来不美观，所以headline从"**"开始, 用其他的工具比如muse, markdown写文章的时候也不要用h2
+
+** 插入more标签
+   网站上的"阅读全文..."，在你认为合适的地方插入如下代码：
+   #+BEGIN_EXAMPLE
+   #+HTML: <!--more-->
+   #+END_EXAMPLE
+   我一般在文章的第一段插入以上代码
+
+** 去掉org的作者署名，日期，创建者
+   这样去掉：
+  #+BEGIN_EXAMPLE
+  #+OPTIONS: ^:nil author:nil timestamp:nil creator:nil
+  #+END_EXAMPLE
+  上面的 *^:nil* 表示屏蔽掉类似"a_b"这样的语法 \\
+  作者署名放在文章前面，并加上作者的介绍页面的链接，就像这样：
+  : #+BEGIN_HTML
+  : <span style="color: #0000ff;">作者: </span><a href="http://emacser.com/about.htm#author" target="_blank"><span style="color: #0000ff;"><b>author name</b></span></a>
+  : #+END_HTML
+  author请替换为自己的网名, author name则是用来显示的, 中文也可.
+  
+** 代码块标记
+   网站上代码高亮用的WP-codebox插件，Org中代码高亮不要直接用 *#+BEGIN_SRC emacs-lisp* 和 @<b>#+END_SRC@</b>，使用一下语法：
+   : #+BEGIN_HTML
+   : <pre lang="lisp" line="1">
+   : codes
+   : </pre>
+   : #+END_HTML
+   如果代码只有一行，就不需要上面的line="1"
+
+** 图片
+   : #+BEGIN_HTML
+   : [caption width="150" caption="此处输入标题"]<a href="screenshots/图片文件名" rel="lightbox"><img src="screenshots/thumbs/thumbs_图片文件名"/></a>[/caption]
+   : #+END_HTML

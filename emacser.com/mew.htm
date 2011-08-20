@@ -1,0 +1,221 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-06-15 21:02:50 Tuesday by ahei" -->
+
+<!-- 用Mew收发邮件 -->
+
+<!-- Email, 中级 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#bigclean" target="_blank"><span style="color: #0000ff;"><b>bigclean</b></span></a>
+
+<img class="alignright" title="Mew" src="screenshots/mew-logo.gif" width="160" height="80"/>
+
+<h3>简介</h3>
+<p>最近也是学习缘故，才重新开始使用邮件列表，只是邮箱里的邮件已经堆积如山了。邮件客户端的选择余地很大，有跨平台的 <a href="http://www.mozillamessaging.com/" target="_blank">thunderbird</a>，也有 <a href="http://projects.gnome.org/evolution/" target="_blank">evolution</a>。<a href="http://www.gnu.org/software/emacs/" target="_blank">emacs</a> 上的邮件客户端有强大的 <a href="http://www.gnus.org/" target="_blank">gnus</a>，但是 gnus 的跨平台性不是很好，太依赖 linux 工具，在 windows 上的配置也比较繁琐。gnus 是单线程的程序，感觉作为新闻阅读器更合适。没有选用 <a href="http://www.mutt.org/" target="_blank">mutt</a> 作为客户端，也是配置繁琐所致，曾经尝试过几次但都失败了。<!--more--></p>
+<p>几番搜索比较后，选择了 <a href="http://www.mew.org/en/" target="_blank">mew</a> 作为邮件客户端，一如所有的 emacs 的插件，强大和无穷的定制性。</p>
+<ul>
+<li>强大的过滤器定制，在 mew 中称为 refile。而且 mew 自动 refile 还是比较准确和人性化的。</li>
+<li>mew 是日本人的作品。因此相比 gnus 对 cjk 的支持要完善。</li>
+<li>mew 内建的丰富模式，一共六种，有 summary, virtual meaaage, draft, header, edit, addrbook mode。</li>
+<li>mew 的配色相比 gnus 实在是非常的舒服，也是最初吸引自己的原因。</li>
+</ul>
+
+<h3>安装</h3>
+<p>mew 的安装在 linux 下很简单，如果是 gentoo 的话，可以直接通过命令"emerge app-emacs/mew" 安装。如果是想要自己来管理各个 elisp 拓展，那可以通过 autotools 进行安装，更推荐前者。</p>
+<p>mew 在 windows 的安装上比较折腾，不得不说， emacs 在 windows 上使用要辛苦的多。具体的安装可以参考 mew 的文档，如果要使用 mew 的 ssl 加密连接功能，必须要安装 stunnel3 版本，而且需要openssl 的支持。</p>
+<pre lang="lisp" line="1">
+(if (string-equal system-type "windows-nt")
+    ;; Note,in windows,you must use replace stunnel4 with stunnel3 version.
+    (setq mew-prog-ssl  "C:/Program Files/stunnel/stunnel.exe")
+  (setq mew-prog-ssl "/usr/bin/stunnel"))
+</pre>
+
+<h3>配置</h3>
+<p>mew 的 初始化必要代码建议写入 ~/.emacs 文件中，而 mew 单独的配置建议保存在 ~/.mew.el 文件中，mew 在启动时会读取此文件中的配置内容。</p>
+
+<h4>初始化配置</h4>
+<p>安装完之后还需要在 ~/.emacs 文件中加入如下必要代码以告诉 emacs 如何启动 mew。</p>
+<pre lang="lisp" line="1">
+(autoload 'mew "mew" nil t)
+(autoload 'mew-send "mew" nil t)
+
+;; Optional setup (Read Mail menu for Emacs 21):
+(if (boundp 'read-mail-command)
+    (setq read-mail-command 'mew))
+
+;; Optional setup (e.g. C-xm for sending a message):
+(autoload 'mew-user-agent-compose "mew" nil t)
+(if (boundp 'mail-user-agent)
+    (setq mail-user-agent 'mew-user-agent))
+(if (fboundp 'define-mail-user-agent)
+    (define-mail-user-agent
+      'mew-user-agent
+      'mew-user-agent-compose
+      'mew-draft-send-message
+      'mew-draft-kill
+      'mew-send-hook))
+</pre>
+
+<h4>帐号设置</h4>
+对于邮件服务的设置，在 mew 中即被映射为对 mailbox 的设置，mew 中对于邮件的组织是通过 mailbox 完成的。相应的有 3 种类型的 mailbox，分别表示着local/pop/imap/nntp/，即不同的邮件箱对应着不同的邮件协议，通过变量proto 进行设置。
+
+包含邮件的 mailbox 在 mew 中被称为 folder，而 folder 的名称由两部分组成：proto + string。proto 相应的有三种类型，分别以 +/$/%/- 对应着local/pop/imap/nntp, 如 +inbox 即为最典型的 folder。相应的 mew 的文件夹分为两类，本地 folder 和 远程 folder，本地 folder 有四种类型，+inbox/+draft/+quene/+postq。远程 folder 根据协议既可以分为三种类型，$folder/%folder/-folder，如$inbox/%inbox/-fj.mail.reader.mew。
+
+mew 对多账户的支持很好，可以支持 imap/pop3/nntp/local，可以通过 mew-config-alist变量进行非常灵活而强大的设置。如以下即为 gmail 的设置样例。
+<pre lang="lisp" line="1">
+(setq mew-config-alist
+      '(
+         ;; Default fetch mailbox is IMAP
+         ("default"
+         ("mailbox-type"         . imap)
+         ("proto"                . "%")
+         ("imap-server"          . "imap.gmail.com")
+         ("imap-ssl"             . t)
+         ("imap-user"            . "imapuser@gmail.com")
+         ("name"                 . "name")
+         ("user"                 . "user")
+         ("mail-domain"          . "gmail.com")
+         ("imap-ssl-port"        . "993")
+         ("imap-size"            . 0)
+         ("imap-delete"          . t)
+         ("smtp-ssl"             . t)
+         ("smtp-auth-list"       . ("PLAIN" "LOGIN" "CRAM-MD5")) 
+         ("smtp-user"            . "smtpuser@gmail.com")
+         ("smtp-server"          . "smtp.gmail.com")
+         ("smtp-ssl-port"        . "465"))
+
+         ;; mailbox POP3 for mailinglist
+         ("mailinglist"
+         ("mailbox-type"         . pop)
+         ("proto"                . "+")
+         ("pop-server"           . "pop.gmail.com")
+         ("pop-ssl"              . t)
+         ("name"                 . "username")
+         ("user"                 . "user")
+         ("mail-domain"          . "gmail.com")
+         ("pop-auth"             . pass)
+         ("pop-user"             . "popuser@gmail.com")
+         ("pop-ssl-port"         . "995")
+         ("smtp-user"            . "smtpuser@gmail.com")
+         ("smtp-ssl"             . t)
+         ("smtp-server"          . "smtp.gmail.com")
+         ("smtp-ssl-port"        . "465"))
+        ))
+</pre>
+
+<h4>引用，回复与签名档</h4>
+<p>mew 可以灵活的设置如何引用邮件上下文，定制引用的格式。mew的引用是由变量mew-cite-fields 控制，有 From，Subject，Date域，具体的引用样式由 mew-cite-format 设置。mew 默认的配置如下：</p>
+<pre lang="lisp" line="1">
+(defvar mew-cite-fields '("From:" "Subject:" "Date:"))
+(defvar mew-cite-format "From: %s\nSubject: %s\nDate: %s\n\n")
+(defvar mew-cite-prefix "> ")
+</pre>
+
+<p>如果需要修改为 Gmail 的引用格式，可以只选择 From 和 Date 域，然后修改mew-cite-format 即可。</p>
+<pre lang="lisp" line="1">
+(setq mew-cite-fields '("Date:"  "From:"))
+(setq mew-cite-format "On %s %s wrote:\n\n")
+</pre>
+
+<p>如何回复，回复的位置，大概是邮件中争论最多的地方。基本上所有邮件的 web客户端，Gmail，outlook 都默认使用上回复(top-posting)，但是邮件列表和新闻组(usenet)提倡下回复(bottom-posting)，在一个社区中使用“错误”的风格，可能被视作严重违反网络礼仪，从而遭致社区成员的激烈反应。可以参考 <a href="http://en.wikipedia.org/wiki/Posting_style/" target="_blank">wiki</a> 和 <a href="http://www.woodpecker.org.cn:9081/classes/050730-CPUG/usMaillist/" target="_blank">python的邮件列表规范和礼节</a>。</p>
+<p>回到 mew 的设置，通过设置变量 mew-summary-reply-with-citation-position可以选择是使用上回复或是下回复。如果设置为 body，即回复出现在引文之前，名为上回复，如设置为 end，在引文后回复，使用下回复样式。</p>
+<p>mew 默认使用的邮件签名档位于 ~/.signature 文件，由变量 mew-signature-file控制，快捷键 ‘C-cTAB’ 会在光标处插入签名档。建议将签名档放置在邮件的末尾，可以通过 mew-signature-as-lastpart’ 与 ‘mew-signature-insert-last’设置。如果需要在撰写或是回复邮件时，需要自动插入签名档，可以通过mew-draft-mode-newdraft-hook 进行插入。</p>
+<pre lang="lisp" line="1">
+(setq mew-signature-file "~/Mail/signature")
+(setq mew-signature-as-lastpart t)
+(setq mew-signature-insert-last t)
+(add-hook 'mew-before-cite-hook 'mew-header-goto-body)
+(add-hook 'mew-draft-mode-newdraft-hook 'mew-draft-insert-signature)
+</pre>
+
+<h4>refile</h4>
+对于邮件列表和新闻组，邮件过滤和 thread 功能是不可或缺的。mew 的邮件过滤功能，或是 mew 的术语称谓的 refile 很强大而实用。refile 功能对于pop 邮箱而言非常实用，gmail 的 imap 由于可以使用 filter 与 label 的组合，也非常的完美。
+
+如果为设置任何的 refile rules，在 summary-mode 里面按 o 即可对当前邮件进行分类，mew 会问你把邮件分类到哪个文件夹里面去，并提供了一个默认的选项，通常情况下默认选项就是正确的选项，所以直接回车就可以了。
+
+虽然 mew 的 refil-by-guess 很方便，但是更加使用的还是自定义 refile rules。
+mew 提供的 refile 非常丰富，但感觉实用可定性好的还是 Guess by user defined rules。例如，如果你订阅了 octave，freebsd 的帮助邮件列表，很自然的会需要把此三个邮件列表的邮件分开存放在不同的本地文件下，而通常的邮件会存放到 inbox folder。相应的只需要把邮件头的 To 和 Cc 域里包含有 "@octave.org"的邮件 refile 到 +math/octave 文件夹中，同时把 To 和 Cc 域里含有"@freebsd.org"的邮件 refile 到 +unix/freebsd，就可以使用如下的实例代码。
+更详尽的 refile rules 可以参考 mew 的使用手册。
+
+<pre lang="lisp" line="1">
+(setq mew-refile-guess-alist
+      '(("To:"
+         ("@octave.org"                       . "+math/octave")
+         ("@freebsd.org"                      . "+unix/freebsd"))
+        ("Cc:"
+         ("@octave.org"                       . "+math/octave")
+         ("@freebsd.org"                      . "+unix/freebsd"))
+        (nil . "+inbox")))
+(setq mew-refile-guess-control
+      '(mew-refile-guess-by-folder
+        mew-refile-guess-by-alist))
+</pre>
+
+完成 refile rules 后，在收取邮件后，按下 'M-o' 即可对当前 mode 下的邮件按照定义的 rules 进行 refile。然后，你想要查阅 octave 邮件列表，只需要按下 'g' 与 '+math/octave'，就可以切换到 octave 文件夹，此时再按下 'tt'，既可以进入 mew 提供的 thread 功能，此时的 mode 称为 virtual folder mode，mew 会指示出各个邮件之间的层次关系，非常方便。
+
+<h3>使用folder</h3>
+在邮件服务设置完成后，就需要获取远程的邮件到本地的 +inbox folder。当输入'M-x mew'，mew 会依据 'mew-mailbox-type' 获取相应协议的邮件。但此时 位于summary 模式时，只需输入 'i' 即可。如果用 mew 处理邮件一段时间后，需要再查收远程 folder 上的邮件，试试 's' 快捷键。对于 IMAP 和 NetNews，更加建议使用 's'，而非 'i'。当按下 's' 时，mew 会向你询问 range，一般而言输入'sync' 比较合适，这会同步本地 folder，即删除已在远程服务器上删除的邮件和收取新接受的邮件。当使用 'C-u s'快捷键时，可以在仅获取邮件头和获取完整邮件信息间切换，相应的这是由诸如 'mew-pop-header-only' 变量定义的。对于邮件列表和新闻组而言，跟推荐获取完整的邮件信息，刻意离线查阅，非常方便。
+
+使用 Gmail IMAP 非常方便，使用 mew 配合 Gmail 的 filter 与 label 可以对邮件进行很有效的管理。如你当下在 %inbox，如果需要切换到 'All sent'，只需要输入 'g'，然后输入 '%[Gmail]/All Mail' 或者使用 mew 提供方便的自动补全机制。mew 使用 folder 管理邮件，而在各个 folder 进行切换的快捷键既是方便的 'g'。
+
+mew 也提供了方便的对多账户进行使用与切换的功能。以如上的账户设置为例，在如上设置了两个 "cases": "default","mailinglist"。如果当前的 case 为dafault， mew 即为按照 default 的设置，即此时以 imapuser 按照 IMAP 协议收取邮件。而如果你想要切换至 mailinglist 时，只需要使用快捷键 'C'，输入mailinglist 即可，此时 mew 即会使用 popuser 帐号以 pop 协议收取邮件。在启动 mew 时，默认使用 default 此 case。
+
+<h3>快捷键</h3>
+<p>mew 的日常使用可以通过各种 mode 上的菜单完成，但使用快捷键也非常方便。</p>
+<table border="1">
+<tr>
+<td>w</td><td>撰写新邮件</td>
+</tr>
+<tr>
+<td>a</td><td>回复邮件，不带引用</td>
+</tr>
+<tr>
+<td>A</td><td>回复邮件，带引用</td>
+</tr>
+<tr>
+<td>f</td><td>转发邮件</td>
+</tr>
+<tr>
+<td>r</td><td>重新发送邮件</td>
+</tr>
+<tr>
+<td>SPC</td><td>阅读邮件</td>
+</tr>
+<tr>
+<td>y</td><td>保存文件（可以保存信件全文、信件正文、附件）</td>
+</tr>
+<tr>
+<td>C-c C-l</td><td>转换当前邮件的编码格式</td>
+</tr>
+<tr>
+<td>C-c C-a</td><td>加入地址薄</td>
+</tr>
+<tr>
+<td>C-u C-c C-a</td><td>比 <em>C-c C-a</em> 多加入昵称和名字</td>
+</tr> 
+<tr>
+<td>C-c C-q</td><td>不保存退出</td>
+</tr>
+<tr>
+<td>C-c C-a</td><td>准备插入附件</td>
+</tr>
+<tr>
+<td>mew-attach-copy</td><td>用复制方式加入附件</td>
+</tr>
+<tr>
+<td>mew-attach-link</td><td>用链接方式加入附件</td>
+</tr>
+<tr>
+<td>mew-attach-delete</td><td>删除附件</td>
+</tr>
+<tr>
+<td>C-c C-c</td><td>发送邮件</td>
+</tr>
+<tr>
+<td>C-c RET</td><td>保存邮件到发送队列</td>
+</tr>
+<td>C</td><td>如果设置了多个邮箱，用 C 命令切换</td>
+</tr>
+<tr>
+<td>Q</td><td>退出Mew</td>
+</table>

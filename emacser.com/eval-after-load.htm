@@ -1,0 +1,190 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-05-16 19:20:55 Sunday by ahei" -->
+
+<!-- 用eval-after-load避免不必要的elisp包的加载 -->
+
+<!-- ELisp, 中级 -->
+
+Emacs中为保证操作的一致性和使用的方便性, 同一个功能在不同的mode中都绑定相同的键, 这样你操作的时候不用区分当前到底是哪个mode, 比如, c-mode, c++-mode, java-mode, awk-mode中注释都是用C-c C-c, c-mode, java-mode中都是用C-c C-q格式化当前函数, 等等. 所以我们自己在定义快捷键的时候, 最好也遵守这种惯例.<!--more-->
+
+假如我们现在要对Info-mode, view-mode, grep-mode, color-theme绑定vi中的光标移动快捷键hjkl, 代码如下:
+<pre lang="lisp" line="1">
+(dolist (map (list Info-mode-map view-mode-map grep-mode-map color-theme-mode-map))
+  (define-key map "h" 'backward-char)
+  (define-key map "l" 'forward-char)
+  (define-key map "j" 'next-line)
+  (define-key map "k" 'previous-line))
+</pre>
+现在用C-x C-e执行上面代码, 出现以下错误:
+<pre lang="lisp" line="1">
+Debugger entered--Lisp error: (void-variable Info-mode-map)
+  (list Info-mode-map view-mode-map grep-mode-map color-theme-mode-map)
+  (let ((--dolist-tail-- ...) map) (while --dolist-tail-- (setq map ...) (define-key map "h" ...) (define-key map "l" ...) (define-key map "j" ...) (define-key map "k" ...) (setq --dolist-tail-- ...)))
+  (dolist (map (list Info-mode-map view-mode-map grep-mode-map color-theme-mode-map)) (define-key map "h" (quote backward-char)) (define-key map "l" (quote forward-char)) (define-key map "j" (quote next-line)) (define-key map "k" (quote previous-line)))
+  eval((dolist (map (list Info-mode-map view-mode-map grep-mode-map color-theme-mode-map)) (define-key map "h" (quote backward-char)) (define-key map "l" (quote forward-char)) (define-key map "j" (quote next-line)) (define-key map "k" (quote previous-line))))
+  eval-last-sexp-1(nil)
+  eval-last-sexp(nil)
+  call-interactively(eval-last-sexp nil nil)
+</pre>
+原因是还没有加载info这个包, Info-mode-map还没有定义, 那自然其他几个map也有这个问题, 所以我们要先加载它们对应的包, 代码变成:
+<pre lang="lisp" line="1">
+(require 'view)
+(require 'info)
+(require 'grep)
+(require 'color-theme)
+
+(dolist (map (list Info-mode-map view-mode-map grep-mode-map color-theme-mode-map))
+  (define-key map "h" 'backward-char)
+  (define-key map "l" 'forward-char)
+  (define-key map "j" 'next-line)
+  (define-key map "k" 'previous-line))
+</pre>
+那么又有一个问题, 你有时候打开Emacs只是写点c的代码, 并没有用view-mode, 也没有看info, 也有可能没有grep, 更有可能没用color-theme-mode, 这样就白白浪费你的时间去加载这些你有时候根本用不到的view, info, grep, color-theme, 虽然这几个包启动时间不长, 但随着你的Emacs使用年龄越来越大, 你的Emacs配置文件将会越来越长. 而且像CEDET那样的庞然大物启动起来还是有点慢的。截止到笔者做此文时, 我的.emacs文件888行, .emacs中还会加载151个settings文件, 这些文件共11654行, 总共加起来12542行, 具体文件行数大家可以下载我的<a href="dea.htm" target="_blank">DEA</a>, 用wc命令看一下. 可想而知, 如果都是那样浪费的话, 你的Emacs将会比Eclipse启动还慢.
+
+那现在怎么办?
+
+Emacs早为你想好了。
+
+Emacs中有一种数据类型叫autoload, 这种数据类型的函数定义是一个以autoload开头的list，比如你emacs -q启动Emacs，然后执行下面的代码：
+<pre lang="lisp">
+(symbol-function 'org-mode)  ; => (autoload "org" 1272073 t nil)
+</pre>
+会得到上面类似的结果。
+
+那这种类型有什么作用呢？
+
+减少不必要的lisp包的加载！
+
+上面的函数定义表示当你真正执行M-x org-mode的时候，Emacs才会去org.el里面去找org-mode的定义，你如果不执行M-x org-mode的话，是不用去加载org.el的。
+
+那这种数据类型是怎样产生的呢？
+
+Emacs中有一个autoload的函数，该函数定义如下：
+<pre lang="lisp">
+(autoload function file &optional docstring interactive type)
+</pre>
+第一个参数是你准备生成autoload类型的symbol，第二个参数file是该symbol的定义所在的文件，第三个参数是这个symbol的文档，第四个参数是这个symbol是否是一个命令，最后一个参数指明该symbol的类型，nil表示这个symbol是个函数，keymap表示它是个keymap,macro则表示它是个宏。比如你执行下面的代码：
+<pre lang="lisp">
+(autoload 'test-mode "test" "This is a test command." t)
+</pre>
+这样就生成了一个autoload类型的symbol test, 然后再执行下面的代码：
+<pre lang="lisp">
+(symbol-function 'test-mode)  ; => (autoload "test" "This is a test command." t nil)
+</pre>
+就会得到上面的结果。 那为什么要写那些docstring, interactive, type这些参数呢？直接写file不就可以了吗？Emacs就会找到它的定义啦。主要原因是不用加载它们对应的文件的时候，就能用C-h f (M-x describe-function)查看它们的文档，在M-x执行命令的时候，就能用补全补到它们。
+
+Emacs中好多命令都是autoload的，比如grep, 比如ido-mode, c-mode, python-mode, 等等等等，所以才能保证启动速度非常快。
+
+那定义这么多的autoload, 一个一个的手工去写，岂不累死？而且这些函数已经定义过了，再用autoload重新写一遍函数定义岂不重复劳动？
+
+没关系，Emacs自然有办法。
+
+我想经常看写elisp代码的emacser们应该会经常看到***-mode上面会有一行“;;;###autoload”的标记吧，这是Emacs的魔法标记，它的写法是由Emacs中的变量generate-autoload-cookie来定义的，当某个defcustom和函数定义(包括`defun', `define-skeleton', `define-derived-mode', `define-generic-mode', `define-minor-mode', `defmacro')上面有这个魔法标记后，你用update-file-autoloads或者update-directory-autoloads命令会自动生成那些autoload语句放在loaddefs.el里面，当然这个文件名是由generated-autoload-file来控制的。你可以看看文件/usr/share/emacs/23.1/lisp/loaddefs.el，这是Emacs内置的autoload, 里面有非常多的autoload函数.
+
+搭配这个autoload, Emacs还提供了一个eval-after-load函数, 该函数定义如下:
+<pre lang="lisp">
+(eval-after-load file form)
+</pre>
+该函数第一个参数是一个file或者是一个feature的symbol, 第二个参数是一个form, 该函数的意思就是当加载file之后, 才执行form. 我们再看一个例子:
+<pre lang="lisp" line="1">
+(eval-after-load "info"
+  `(let ((map Info-mode-map))
+     (define-key map "h" 'backward-char)
+     (define-key map "l" 'forward-char)
+     (define-key map "j" 'next-line)
+     (define-key map "k" 'previous-line)))
+</pre>
+上面这个例子的意思就是加载了info后, 才去定义info的按键, 这样就不用担心Info-mode-map没有定义了, 而且还不用加载info.
+
+配合autoload, eval-after-load, 我们就不用加载包, 而去配置包. 举个例子, 首先用autoload定义info命令, 当你输入info命令之后, Emacs去加载info命令对应的文件info.el, 这时候eval-after-load里面的form被触发, Emacs会去eval那个form, 从而配置info.
+
+有了auotoload和eval-after-load, 我们前面的问题就迎刃而解了. 解决方法如下:
+<pre lang="lisp" line="1">
+(require 'cl)
+
+(defun find-loadfile-by-map (map)
+  "Find load file by MAP."
+  (case map
+    ('Info-mode-map "info")
+    ('view-mode-map "view")
+    ('grep-mode-map "grep")
+    ('color-theme-mode-map "color-theme")))
+
+(dolist (map `(Info-mode-map view-mode-map grep-mode-map color-theme-mode-map))
+  (let ((file (find-loadfile-by-map map)))
+    (eval-after-load file
+      `(progn
+         (define-key ,map "h" 'backward-char)
+         (define-key ,map "l" 'forward-char)
+         (define-key ,map "j" 'next-line)
+         (define-key ,map "k" 'previous-line)))))
+</pre>
+代码很简单, 就是根据map用find-loadfile-by-map函数去找它对应的文件, 然后调用eval-after-load. 这样你不用加载info, view, grep, color-theme就可以配置它们的按键了, 当这些文件被加载之后, 这些按键定义就会自动eval.
+
+这种根据map定义按键的地方挺多的, 至少我的使用经验是这样的, 如果每次都要像上面那样写, 也是挺麻烦的, 所以我专门写了一个elisp包, eval-after-load.el, 让你非常方便的写类似上面那样的代码.
+
+eval-after-load.el里面主要有这几个函数: eal-eval-by-modes, eal-eval-by-maps, eal-define-key, eal-define-keys, eal-define-keys-commonly.
+
+eal-eval-by-modes函数定义如下:
+<pre lang="lisp">
+(eal-eval-by-modes modes fun)
+</pre>
+modes是一个mode的list, 这个函数会根据mode查找其对应的文件, 然后用eval-after-load执行fun, fun的参数为mode, 举个例子:
+<pre lang="lisp" line="1">
+(eal-eval-by-modes
+ ac-modes
+ (lambda (mode)
+   (let ((mode-name (symbol-name mode)))
+     (when (and (intern-soft mode-name) (intern-soft (concat mode-name "-map")))
+       (define-key (symbol-value (am-intern mode-name "-map")) (kbd "C-c a") 'ac-start)))))
+</pre>
+这个例子是用在auto-complete中的, 它会根据ac-modes去配置这些mode map里面的ac-satrt命令的按键定义.
+
+eal-eval-by-maps与eal-eval-by-modes作用类似, 只不过是根据map来进行eval-after-load的, 我来用这个函数更简洁的解决上面的例子:
+<pre lang="lisp" line="1">
+(eal-eval-by-maps
+ `(Info-mode-map view-mode-map grep-mode-map color-theme-mode-map)
+ (lambda (map)
+   (setq map (symbol-value map))
+   (define-key map "h" 'backward-char)
+   (define-key map "l" 'forward-char)
+   (define-key map "j" 'next-line)
+   (define-key map "k" 'previous-line)))
+</pre>
+注意：上面的map是要加引用的，因为那些map可能还没有定义，所以不能直接做为变量使用。
+
+是不是还嫌麻烦, 用eal-define-keys来写个更简单的:
+<pre lang="lisp" line="1">
+(eal-define-keys
+ `(Info-mode-map view-mode-map grep-mode-map color-theme-mode-map)
+ `(("h" backward-char)
+   ("l" forward-char)
+   ("j" next-line)
+   ("k" previous-line)))
+</pre>
+这样, 就完美了解决了上面的那个例子.
+
+eal-define-key是定义单个的map的按键的，和eal-eval-by-maps一样，它的参数map也需要被引用起来。eal-define-keys-commonly和eal-define-keys作用一样，不过是普通的define-key，没有使用eval-after-load。
+
+现在你肯定想知道eval-after-load.el的原理了吧， 其实很简单，就是内部定义了一个mode, map到load file的映射，它是有变量eal-loadfile-mode-maps控制的，这个变量是一个list，每个元素可以是：
+<ul>
+  <li>是一个load file, 比如"view"，然后view-mode, view-mode-map自动会根据"view"拼出来，还可以是"help-mode"这样，mode, map也可以根据它拼出来</li>
+  <li>是一个list，该list由load file, mode, map组成，比如:
+<pre lang="lisp">
+("lisp-mode"       lisp-interaction-mode  lisp-interaction-mode-map)
+</pre>
+      这种情况适用于mode和map无法根据load file拼出来，就像上面的例子那样。
+  </li>
+  <li>nil
+  nil的作用主要是可以根据某条件动态控制eal-loadfile-mode-maps，比如：
+<pre lang="lisp" line="1">
+(add-to-list
+ 'eal-loadfile-mode-maps
+ `("test1"
+   ,(if (>= emacs-major-version 22) "test2")))
+</pre>
+  </li>
+</ul>
+
+最后，下载<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/eval-after-load.el" target="_blank">eval-after-load.el</a>

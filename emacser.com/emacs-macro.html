@@ -1,0 +1,128 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: <2010-03-27 20:10:16 Saturday by ahei> -->
+
+<!-- Emacs中诡异的宏 -->
+
+今天在写一个宏时, 碰到了一个很诡异的问题. 问题是这样的:
+<pre lang="lisp" line="1">
+(setq list '("C-x e" "C-x f"))
+(kbd (nth 0 list))
+</pre>
+emacs却报错:
+<pre lang="lisp">
+Debugger entered--Lisp error: (wrong-type-argument integer-or-marker-p (nth 0 list))
+</pre><!--more-->
+
+这么简单的一个程序, 却运行错误, 把我搞的莫名其妙, 弄了好久都不知道为啥会出错, 最后请教一位emacs前辈, 才搞明白了. 原因是: kbd是一个宏. 那为什么它是一个宏, 就会报那个错呢? 想要搞清楚这个原因的话, 我们先必须搞清楚emacs中宏与函数的异同点以及emacs中的宏与c中的宏的异同点。
+<h3>Elisp中函数与宏的比较</h3>
+<ul>
+  <li>相同点
+    函数调用的时候要对函数体进行求值，宏调用的时候要对宏体进行调用，比如： 
+    <pre lang="lisp" line="1">
+(defun test-fun (a b)
+  (+ a b))
+
+(defmacro test-macro (a b)
+  (+ a b))</pre>
+    (test-fun 1 2)   => 3
+    (test-macro 1 2) => 3
+    这点上它们是相同的
+  </li>
+
+  <li>不同点 
+    <ol>
+      <li>函数是对参数进行求值以后才传到函数体里面去的，而宏不求值直接作为一个symbol传到宏体里面去的，这点很重要，如果没有理解好这点，会犯好多错误，我们来看看下面的例子:
+        <pre lang="lisp" line="1">
+(test-fun 1 (+ 2 3)) => 6
+(test-macro 1 (+ 2 3))
+emacs报错: Debugger entered--Lisp error: (wrong-type-argument number-or-marker-p (+ 2 3))</pre>
+        为什么调用(test-macro 1 (+ 2 3))的时候emacs会报错呢, 原因就是因为对宏求值的时候, 直接把参数做为宏的参数, 并不求值, 我们来看一下emacs报的堆栈提示就知道了:
+        <pre lang="lisp" line="1">
+Debugger entered--Lisp error: (wrong-type-argument number-or-marker-p (+ 2 3))
+  +(1 (+ 2 3))
+  (lambda (a b) (+ a b))(1 (+ 2 3))
+  (test-macro 1 (+ 2 3))
+  eval((test-macro 1 (+ 2 3)))
+  eval-last-sexp-1(nil)
+  eval-last-sexp(nil)
+  call-interactively(eval-last-sexp nil nil)</pre>
+        从上面, 很明显就可以看出没有先对(+ 2 3)求值, 就直接作为参数传给宏了.
+      </li>
+
+      <li>函数对函数体求值后, 就完事了, 宏不同, 它对宏体求值后, 还要对求值后的表达式再求值一遍, 我们来看下面的例子:
+        <pre lang="lisp" line="1">
+(defun test-fun (a b)
+  (list '+ a b))
+
+(defmacro test-macro (a b)
+  (list '+ a b))</pre>
+      (test-fun 1 2)   => (+ 1 2)
+      (test-macro 1 2) => 3
+      为什么它们的结果不同? 原因就是elisp对宏体求值后, 对求值后的结果再求值一遍, 即: 对宏体求值得到(+ 1 2), 这个和(test-fun 1 2)结果是一样的, 但是此时elisp解释器并没有止步, 还要进一步对(+ 1 2)行求值, 进而最终得到3.
+      </li>
+    </ol>
+  </li>
+</ul>
+<h3>Elisp中的宏与c中的宏的异同点</h3>
+<ul>
+  <li>相同点 它们都是不对参数进行求值, 就直接作为参数传给宏. </li>
+  <li>不同点 c中的宏是直接进行宏替换, 然后对替换后的表达式进行求值, 而且这个是在预处理阶段进行的, 而elisp中的宏则是对宏体进行求值后, 再进行宏扩展, 它则是在程序运行过程中进行的. 来看下面的例子:
+<pre lang="lisp" line="1">
+#define test_macro_c(a, b) printf("%d%d", a, b)
+(defmacro test-macro-elisp (a b)
+  (list '+ a b))
+</pre>
+     test_macro_c(1, 1+2)进行宏扩展后变为printf("%d%d", 1, 1+2)
+     test-macro-elisp(1, 2)并不是像c中那样简单的扩展变为(list '+ 1 2), 然后再对(list '+ 1 2)行求值, 最终得到结果(+ 1 2), 而是先对宏体进行求值得到(+ 1 2), 然后再进行宏展开, 即对刚才的结果进行再求值, 最终得到3. 
+</ul>
+
+经过上面的分析, 我相信对于文中开头提出的那个问题, 我们很容易就弄清楚原因了.
+我们先来看看kbd的定义:
+<pre lang="lisp" line="1">
+(defmacro kbd (keys)
+  "Convert KEYS to the internal Emacs key representation.
+KEYS should be a string constant in the format used for
+saving keyboard macros (see `edmacro-mode')."
+  (read-kbd-macro keys))
+</pre>
+(kbd (nth 0 list)), 先对宏体进行求值, 即对(read-kbd-macro (nth 0 list))进行求值, 注意: 此时(nth 0 list)没有被求值, 只是作为宏参数传进来了, 它并不是read-kbd-macro所要求的参数, 所以最终出现了那个错误. 我们来看一下emacs的堆栈信息, 也能了解到这点:
+<pre lang="lisp" line="1">
+Debugger entered--Lisp error: (wrong-type-argument integer-or-marker-p (nth 0 list))
+  read-kbd-macro((nth 0 list))
+  (lambda (keys) (read-kbd-macro keys))((nth 0 list))
+  (kbd (nth 0 list))
+  eval((kbd (nth 0 list)))
+  eval-last-sexp-1(nil)
+  eval-last-sexp(nil)
+  call-interactively(eval-last-sexp nil nil)
+</pre>
+如果想要刚才的代码能运行, 可以把kbd的定义改为:
+<pre lang="lisp" line="1">
+(demacro kbd (keys)
+  `(read-kbd-macro ,keys))
+</pre>
+这样,先对宏体求值得到(read-kbd-macro "C-x e"), 然后再求值就可以了.
+
+虽然emacs的宏很诡异, 但是能实现一些比较强大的功能, 例如:
+<pre lang="lisp" line="1">
+(defmacro def-remember-command (command)
+  "Make definition of command which remember `poiint'."
+  `(defun ,(concat-name command "-remember") ()
+     ,(concat "When `" command "' remember `point'.")
+     (interactive)
+     (call-interactively (intern ,command))
+     (if mark-active
+         (setq last-region-end (point)))))
+</pre>
+调用(def-remember-command "next-line"), 先对宏体求值得到:
+<pre lang="lisp" line="1">
+(defun next-line-remember nil "When `next-line' remember `point'."
+  (interactive)
+  (call-interactively
+   (intern "next-line"))
+  (if mark-active
+      (setq last-region-end
+            (point))))
+</pre>
+然后再对求值后的结果再求值, 最终实现定义函数next-line-remember的功能.

@@ -1,0 +1,39 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-05-05 09:10:52 Wednesday by ahei" -->
+
+<!-- 智能的启动Emacs -->
+
+<!-- 快速启动, 初级 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#jay" target="_blank"><span style="color: #0000ff;"><b>jay</b></span></a>
+
+Emacs的启动速度是一直为非E众诟病的。虽然说现在机器是越来越快了，用我常用的配置，直接启动emacs也就等个2-3秒，但是和gvim比起来还是太慢了。不过Emacs提供了一个CS模式，在Emacs23以前，可以在一个已打开的Emacs上启动server，之后就可以用emacsclient通过连接到server的方式打开文件。在这种模式下，除了第一次打开Server Emacs耗时比较长外，之后每次起client的速度那都是唰唰的。这是我现在在Win下主要的打开Emacs的方式。这样有一个问题，如果关闭开启Server的那个Emacs，emacsclient就无法连接了，解决办法是给emacsclient加上"--alternative-editor=&lt;path-to-emacs&gt;"这样的参数，在失败时启动一个新的Emacs，当然这样就感受不到直连server的高速爽快感觉了：P <!--more-->
+
+<p>那Emacs 23之后呢？由于POSIX系统的特殊性，这回Emacs给其加上了一个daemon模式。这和传统的CS模型的区别是，启动Emacs Server的是那个daemon进程，这样即便将所有的Emacs窗口关闭，daemon仍然在运行。这样就解决了上面说的必须保持着那个server窗口的问题。</p>
+
+Daemon模式的启动很是方便，直接运行<code>emacs --daemon</code>就行了。当然使用daemon可能会碰到字体设置的问题，这个不在本文范畴，碰到该类问题的童鞋请移步<a title="使用Emacs daemon" rel="nofollow" href="http://emacser.com/daemon.htm" target="_blank">这儿</a>。我们可以把其写成一个init脚本放到系统启动项里面去。不过我并不喜欢这样，因为这不是按需启动的，如果在没注意的情况下把daemon给杀了，之后用emacsclient启动就全部出错了。不过由于有Windows下使用的经历，知道emacsclient可以为启动指定一个fallback，所以很自然就把这个参数指定为一个自定义脚本，这个自定义脚本负责启动daemon和client，脚本如下：
+<pre lang="bash" line="1">
+#! /bin/bash
+emacs --daemon && emacsclient $*
+</pre>
+
+<p>不过在某天我闲来无事看了看emacsclient的help之后才发现，这并不是一个很好的办法，为啥呢？看一下-a的参数就可以知道：</p>
+<pre lang="text">
+-a, --alternate-editor=EDITOR
+       if  the  Emacs server is not running, run the specified editor instead.  This can also be specified via the
+       `ALTERNATE_EDITOR' environment variable.  If the value of EDITOR is the empty string, then Emacs is started
+       in daemon mode and emacsclient will try to connect to it.
+</pre>
+<p>发现没，其实只要给这个参数指定一个空字符，就能让emacsclient在连接不到server时自动启动daemon了。当然，这个参数支持从环境变量ALTERNATE_EDITOR读取，我当然也就选择这个方式了。</p>
+
+<p>这样用下来一阵子，又有问题了。因为启动的daemon是没有frame的，所以假如当前没有可见的frame，在启动emacsclient时又没有加"-c"参数，那么emacsclient只会在daemon上创建一个没有frame的client，而我们将得不到任何提示。如果这时运行"emacsclient -c"创建一个新的frame，你会发现这个文件其实已经打开了，只是我们看不到而已。这是相当令人困扰的。</p>
+<p>那就给emacsclient加上参数"-c"呗。但是因为每次打开都会启动一个新的frame，这样用下来也是不爽快。</p>
+<p>我需要能够一种智能启动emacs的方式，如果当前没有可见的frame，则新建一个，否则，复用当前frame。由于对elisp还是不怎么熟，不知道是否有emacsic的方式，最终我是通过写了一个脚本的方式来实现的：</p>
+<pre lang="bash" line="1">
+#! /bin/bash
+(wmctrl -a @jay && emacsclient -n $*) || emacsclient -n -c $*
+</pre>
+<p>其中用到了wmctrl这个软件包，ArchLinux的用户可以直接用"pacman -S wmctrl"来安装。其中的"@jay"是我的emacs标题上的内容，用来帮助wmctrl找到具有这样属性的窗口。</p>
+<p>把Nautilus的文件默认打开方式设成这个脚本，这下emacs终于能够按照我的想法启动了，另外，我还在Nautilus里面加了一条"emacsclient -c"的打开方式，以便在需要的时候能够方便的新建窗口：）</p>
+<p>P.S. 不知各位Emacs大牛对启动方式上还有啥建议不？特别欢迎elisp的解决方案，呵呵。</p>

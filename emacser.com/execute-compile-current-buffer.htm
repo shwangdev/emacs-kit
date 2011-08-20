@@ -1,0 +1,51 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-10 16:11:05 Wednesday by ahei" -->
+
+<!-- 用elisp编译解释当前的buffer -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#laihj" target="_blank"><span style="color: #0000ff;"><b>laihj</b></span></a>
+
+运行当前的buffer，就是说编译或解释当前的buferr。比如在编辑的是python文件"hello.py"，那么运行它的命令就是"python hello.py"，一般的python-mode用"C-c C-c"来处理这个问题，在编辑过程中可以调用这个快捷键来运行。当然你也可以使用"M-!"来打开shell command的mini buffer来输入命令。<!--more-->
+
+诚然，很多语言的mode里面实际上都内置了这一功能，但我觉得，一方面不同的mode可能定义不同快捷键，造成了额外的记忆负担，另一方面并不能要求所有的mode都提供这一功能，在mode不完整的情况下你大概也需要自己定义的能力。
+
+要做这事儿，当然是自定义一个函数。那么最直观的想法，就是在elisp里面写一行调用shell来执行命令的代码。是的，有这种东西，示例如下:
+<pre lang="lisp">
+(shell-command "python hello.py")
+</pre>
+这一行代码的相当于在终端中执行"python hello.py"。
+
+我们的目的是执行当前buffer,所以下一步要做的是得到当前buffer所对应的文件名。在上一篇blog中介绍过相关方法，就是"buffer-file-name"。
+
+于是代码就变成了这样。
+<pre lang="lisp">
+(shell-command (concat "python " (buffer-file-name)))
+</pre>
+用concat把"python "和当前buffer的文件名连起来作为要执行的命令。
+
+至此，就完成了.py文件的执行函数，那推广之，需要对不同的文件进行编译/解释时，就需要扩展这个命令。
+
+我们知道对.sh文件要用bash命令执行，对.py要用python，对.htm要调用firefox。现在要做的就是让机器知道这件事。很明显的，我们需要一个map，把它们对应地存下来。
+
+完整的代码和注释如下:
+<pre lang="lisp" line="1">
+(defun run-current-file ()
+(interactive)
+(let (ext-map file-name file-ext prog-name cmd-str
+(setq ext-map
+         '(
+            ("py" . "python")
+            ("sh" . "bash")
+            ("htm" . "firefox")
+            )
+          );定义命令－文件类型映身表.
+    (setq file-name (buffer-file-name));得到当前的buffer名
+    (setq file-ext (file-name-extension file-name));得到后缀
+    (setq prog-name (cdr (assoc file-ext ext-map)))；根据后缀得到执行的命令，通过对ext-map的查找
+    (setq cmd-str (concat prog-name " " file-name));拼出一个命令
+    (shell-command cmd-str)))；执行
+</pre>
+完毕，为这个函数绑定一个键，在编辑相应文件的时候调用，就可以对其进行需要的操作了，不仅限于编译和解释，实际上很容易看出来，只要shell能支持的，你可以玩。当然，要有权限。
+
+Have Fun!

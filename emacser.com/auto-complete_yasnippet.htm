@@ -1,0 +1,42 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-06 13:07:54 Saturday by ahei" -->
+
+<!-- auto complete和yasnippet的区别 -->
+
+<a href="auto-complete.htm" target="_blank">auto-complete</a>和yasnippet是Emacs下两款非常强悍的补全插件，那么auto-complete和yasnippet是否就是一对竞争者呢？有你没我，有我没你？<!--more-->
+
+其实不是这样的，它们两个完全能融洽的相处，并且合作的非常愉快。
+
+本质上来说，auto complete只是一个补全界面，它用来展示其他补全引擎的结果，它支持好多补全引擎，包括补全全路径文件名的backend，补全单独文件名的backend，补全当前buffer下单词的backend，补全所有buffer下的单词的backend，补全Elisp语法的引擎，补全yasnippet片段的引擎，补全缩写的引擎，等等等等，当然也包括yasnippet，它会把所有的补全引擎的补全结果一起展示出来，当然是根据你定义的补全引擎的顺序。
+
+那么我们为什么不直接使用yasnippet，而去使用auto complete呢？
+
+除了auto complete可以同时利用其他补全引擎的结果，还使得使用yasnippet起来更方便。比如在yasnippet中你看不到当前光标出单词是否有它的片段定义，你要补全它的时候，要按tab，而auto complete加了yasnippet的引擎后，可以自动提示出当前光标处单词是否有yasnippet的片段定义，yasnippet引擎的结果会用特殊的颜色标注，这里有代码证明：
+<pre lang="lisp" line="1">
+(defface ac-yasnippet-candidate-face
+  '((t (:background "sandybrown" :foreground "black")))
+  "Face for yasnippet candidate.")
+
+(defface ac-yasnippet-selection-face
+  '((t (:background "coral3" :foreground "white")))
+  "Face for the yasnippet selected candidate.")
+
+(defvar ac-source-yasnippet
+  '((candidates . ac-yasnippet-candidate)
+    (action . yas/expand)
+    (candidate-face . ac-yasnippet-candidate-face)
+    (selection-face . ac-yasnippet-selection-face))
+  "Source for Yasnippet.")
+</pre>
+上述代码中的candidate-face表示补全结果的颜色，而selection-face表示当你把光标移到这个补全结果上的时候的颜色，如下图所示：
+[caption width="150" caption="在auto complete使用yasnippet引擎"]<a href="screenshots/auto-complete/auto-complete_yasnippet.png" rel="lightbox"><img title="auto complete yasnippet" src="screenshots/auto-complete/thumbs/thumbs_auto-complete_yasnippet.png" alt="在auto complete使用yasnippet引擎" width="150" height="150" /></a>[/caption]
+上图中，defun和dired都是yasnippet引擎给出来的补全结果，其他的则是其他引擎的补全结果，yasnippet的补全结果用其他颜色标注，而当前所选的yasnippet引擎的补全候选则是用另外一种颜色标注，一目了然。
+还有，比如你有个for的yasnippet片段定义，你输入fo的时候，在yasnippet中这时候你并不能按tab进行补全，但是在auto complete中，你加了yasnippet引擎后，auto complete会提示出yasnippet的补全结果for，就像下面这样：
+[caption width="150" caption="在auto complete使用yasnippet引擎"]<a href="screenshots/auto-complete/auto-complete_yasnippet-for.png" rel="lightbox"><img title="auto-complete yasnippet for" src="screenshots/auto-complete/thumbs/thumbs_auto-complete_yasnippet-for.png" alt="在auto complete使用yasnippet引擎" width="150" height="150" /></a>[/caption]
+这时候，你按回车的话，会自动扩展yasnippet的for片段的定义，变成下面这样：
+[caption width="150" caption="Emacs的超级补全yasnippet"]<a href="screenshots/yasnippet/yasnippet-for.png" rel="lightbox"><img title="yasnippet for" src="screenshots/yasnippet/thumbs/thumbs_yasnippet-for.png" alt="Emacs的超级补全yasnippet" width="150" height="150" /></a>[/caption]
+那么auto complete是怎么做到不需要完整输入yasnippet的片段, 只需要输入部分就能补全yasnippet的片段呢? 很简单，大家看到上面代码中ac-source-yasnippet的定义就明白了，里面有一个(action . yas/expand)，你应该猜到了吧，它的意思就是当你选中yasnippet的candidate并且按下回车的时候，auto complete会去执行那个yas/expand，而它正是yasnippet的补全命令。
+经上所述，通过auto complete，你用yasnippet更方便了。
+
+现在你该明白了，auto complete和yasnippet的区别了吧。

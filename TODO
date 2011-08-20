@@ -1,8 +1,108 @@
-TODO:
+# -*- org -*-
 
-Submit the packages in elpa-to-submit to ELPA.
+# Time-stamp: <2010-10-27 10:41:36 Wednesday by taoshanwen>
 
-to write/finish:
-* submit ruby fixes to flymake
+#+OPTIONS: author:nil timestamp:nil creator:nil
 
-which-func-mode in ruby?
+** TODO M-x的命令补全, 像ido那样, 加快命令输入速度
+** TODO dired commander
+** TODO auto-complete setting
+** TODO doremi color
+** TODO auto document
+** TODO icicles ido
+** TODO commit current file
+** TODO ido entern command
+** TODO auto complete setting all words in all buffer.
+** TODO 增加load到auto-complete的emacs lisp mode.
+** TODO revert file closed
+** TODO kde-emacs与icicles冲突
+** TODO 把ac用到multi-term里面
+** TODO undo所有
+** TODO emacs才是最强大的IDE(介绍所有成为强大的IDE因素)
+** TODO add multi-term to blog
+** TODO 把颜色补全加到ac-omni-completion-sources里面去
+** TODO 自己写个补全，到处能补全，minibuffer也可以
+** TODO 重组recent-jump, select-buffer
+** TODO 增加ido功能
+** TODO 修改vc-ediff emacs22 bug
+** TODO dired-lis搜索的时候可以像tc那样过滤掉不匹配的文件(直接不显示)，如果只有一个匹配的情况下根据用户的配置来决定是否直接打开匹配的文件
+** TODO 增强goto-line，当只有一个行号匹配的话直接到达那行，而且输入的时候光标增量移动
+** TODO 给cursor-change加选项，用户可以定制条件让光标啥时候变成box
+** TODO 把face－settings.el整合到color-theme-ahei里面去
+** TODO 写文章最大化窗口
+** TODO undo closed file
+** TODO select-buffer buffer后面加*表示修改
+** TODO 写博客文章svn命令
+** TODO emacs svn中怎样直接操作svn reposit
+** TODO emacs wordpress
+** TODO eagle 加过滤，加重要消息提示，比如私信，@
+** DONE 查M-x shell在DEA中不能使用的bug yaofan
+
+** TODO 配置好：
+*** TODO 配置好cscope，据说还挺不错
+*** TODO 配置好weblogger
+*** TODO 毕竟eshell可以在win下使用，比较方便
+
+** DONE 增加DEA的FAQ
+
+** TODO 解决bug
+*** TODO ad-handle-definition
+#+BEGIN_EXAMPLE
+ad-handle-definition: `ibuffer-do-occur' got redefined [2 times]
+ad-handle-definition: `moccur-quit' got redefined
+ad-handle-definition: `moccur-mode' got redefined
+ad-handle-definition: `moccur-grep-mode' got redefined
+ad-handle-definition: `moccur-quit' got redefined
+ad-handle-definition: `moccur-mode' got redefined
+ad-handle-definition: `moccur-grep-mode' got redefined=
+#+END_EXAMPLE
+
+*** TODO 新版auto-complete用着用着就出错误自动退出
+*** TODO 解决highlight-tail的bug
+*** TODO 打开org文件后Emacs关闭不了
+    
+** TODO 为DEA增加vi中好用的功能，比如v, V
+** TODO kill-do-not-save-duplicates在DEA中不起作用
+** TODO 看AndyStewart的ElispFormat， OneKey， Irfc， ChmView， ThingEdit
+** TODO 让multi-term下能用
+
+** TODO 发布DEA新版本
+** TODO 改进MultiTerm，申请加入Emacs
+** TODO 申请把emaci加入Emacs
+   
+** DONE 为emacser.com增加向其他sns例如校内分享的功能
+   CLOSED: [2010-10-27 Wed 10:41]
+
+** TODO 维护go-to-char
+
+** TODO ediff退出时怎样让它不提示是否退出
+
+** TODO 仔细了解一下mic-paren
+
+** 报告session的bug
+   cp session.el a.el
+   emacs -Q
+   Use C-x C-f open a.el
+   M-x eval-buffer
+   M-: (session-initialize) RET
+   M-x org-mode RET
+   C-x C-c
+   这时候Emacs占大量CPU，退不出去
+
+** TODO 把DEA公共的东西提出来,把我自己的个人设置拿出来
+** TODO 弄一些特殊环境下的Emacs配置,比如偶尔远程ssh的时候,这样某些配置可以不需要启动
+** TODO 增加cursor-change变换光标的条件的变量,可以考虑进入emaci-mode后把光标切换一下
+   
+** DONE 改函数名颜色
+
+** TODO 看doc-mode
+
+** TODO 如果没有安装cygwin, 启动Emacs的时候会提示没有w3m, 而且退出的时候提示没有test命令
+
+** TODO clang mode and iimage mode
+** TODO file-cache
+** TODO org2blog
+
+** TODO 显示bmp http://www.emacswiki.org/emacs/ppm-gen.el
+** TODO where-are-we http://www.newsmth.net/bbscon.php?bid=573&id=90466
+** TODO http://github.com/brianjcj/smart-mark

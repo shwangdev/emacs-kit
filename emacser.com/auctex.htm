@@ -1,0 +1,269 @@
+﻿<h3><a href="http://www.gnu.org/software/AucTeX/" target="_blank">AucTeX</a> 简介</h3>
+
+<h4>关于 TeX</h4>
+
+<p>关于 <a href="http://en.wikipedia.org/wiki/TeX/" target="_blank">TeX</a> 或是 <a href="http://latex-project.org/" target="_blank">LaTeX</a> 的介绍和使用由于篇幅就不在本文的范围之内，如果需要了解详情可以访问 <a href="http://bbs.ctex.org/" target="_blank">ctex 论坛</a>。</p>
+
+<h4>为何选用 AucTeX？</h4>
+
+<p>TeX 的编辑器很丰富，有跨平台的 <a href="http://code.google.com/p/texworks/" target="_blank">TeXworks</a>，Kile 以及 vim 的 <a href="http://vim-latex.sourceforge.net/" target="_blank">LaTeX-suite</a> 插件。选用 emacs+AucTeX 作为 tex 的编辑器与之相比还是有太多的优点。<!--more--></p>
+
+<ul>
+<li><p>跨平台 AucTeX 作为 emacs 的插件，自然可以实现跨平台，只是由于外部工具的限制在 windows 实在有诸般限制。</p></li>
+<li><p>半 'WYSIWYG' TeX 的工作方式为 WYTIWYG，但是其搭配 emacs，AucTeX 可以对 tex文件进行分析，并且提供一部分的可视化特性，例如可以以粗体显示章节目录，以斜体表示 \textit{} 中的文本。另外配合 preview 组件，还可以显示 tex 文件中的公式和图片。</p></li>
+<li><p>拓展性 AucTeX 是完全是 elisp 实现的，如果你觉得 AucTeX 不能很好的按照你预想的方式工作或是觉得 AucTeX 功能还是不够强大，你可以用 elisp 轻松的拓展其功能，当然这需要一定的 elisp 功力。</p></li>
+</ul>
+
+<h3>安装</h3>
+
+<h4>安装条件</h4>
+
+<p>在 unix-like 上的手动安装比较方便，只需要 "./configure &amp;&amp; make &amp;&amp; make install" 即可，但是当前系统需要满足这些条件：</p>
+
+<ul>
+<li><p>可以工作的 TeX 目录树 在 unix 上 <a href="http://tug.org/texlive/" target="_blank">TeXLive</a> 更加流行，当然各个 linux 发行版本也可以使用各自包管理系统安装 TeX，windows 上 <a href="http://miktex.org/" target="_blank">MikTeX</a> 更加流行。无论是如何安装，TeX 目录树都是很庞大的，你必须确保 TeX 可以编译。</p></li>
+<li><p>ghostscript AucTeX 的 preview 组件在 DVI 和 PDF 模式需要<a href="http://www.cs.wisc.edu/~ghost/" target="_blank"> ghostscript</a> 的协作。</p></li>
+</ul>
+
+<h4>windows 下的安装</h4>
+
+<p>需要单独说明下 AucTeX 在 windows 下的配置，windows 下建议使用官方提供的预编译版本，如现在的版本为 "AucTeX-11.86-e23.1-msw.zip"。如果喜欢折腾自己的话，也可以选择在 windows 编译安装 AucTeX，但是除了满足之前叙述的安装前提外，你还需要一个可以工作的 shell，现在只有 <a href="http://www.mingw.org/" target="_blank">MSYS</a> 和 <a href="http://cygwin.com/" target="_blank">Cygwin</a> 可供选择。最后还是再建议使用预编译的版本，更加建议你在 unix 下使用 emacs 和 TeX，可以免去太多的被折腾。</p>
+
+<h4>加载 AucTeX</h4>
+
+<p>首先你需要把 AucTeX 加入到 load-path 中，然后加载 AucTeX 即可。如把 AucTeX 的预编译安装包解压至 "~/.emacs.d/AucTeX" 路径，相应的配置如下，其他的目录也可以相应修改。</p>
+
+<pre lang="lisp">
+(add-to-list 'load-path
+             "~/.emacs.d/lisps/AucTeX/site-lisp/site-start.d")
+(load "AucTeX.el" nil t t)
+(load "preview-latex.el" nil t t)
+(if (string-equal system-type "windows-nt")
+    (require 'tex-mik))
+</pre>
+
+<p>另外，如果 emacs 是运行在多需折腾的 windows 平台上，系统会加载 "tex-mik"文件，这可以提供很多在 windows 上方便的设置。</p>
+
+<h3>快速开始</h3>
+
+<h4>LaTeX 设置</h4>
+
+<p>通常情况下，编译 tex 文件选用的多是 LaTeX，plainTeX 和 conTeXt 相对使用要少一些。因此本文默认只涉及对 LaTeX 模式相关的设置。</p>
+
+<p>为了使用 AucTeX 方便，为 LaTeX 模式 hook 自动换行，数学公式，reftex 和显示行号的功能。</p>
+
+<pre lang="lisp">
+(mapc (lambda (mode)
+      (add-hook 'LaTeX-mode-hook mode))
+      (list 'auto-fill-mode
+            'LaTeX-math-mode
+            'turn-on-reftex
+            'linum-mode))
+</pre>
+
+<p>现在 TeX 对于中文的处理基本有两种方案，CJK 宏包和 xetex。如果使用 CJK 宏包需要对字体进行配置，这也是大部分面对 TeX 最折腾的地方。相比 CJK 宏包，xetex 要方便的多。本文也建议你设置 'TeX-engine' 变量为 xetex 替代 latex 作为 tex 文件的默认排版引擎。</p>
+
+<p>在 LaTeX mode 中，默认开启 PDF mode，即默认使用 xelatex 直接生成 pdf 文件，而不用每次用 'C-c C-t C-p' 进行切换。设置 'Tex-show-compilation' 为 t，在另一个窗口显示编译信息，对于错误的排除很方便。另外，编译时默认直接保存文件，绑定补全符号到 TAB 键。</p>
+
+<pre lang="lisp">
+(add-hook 'LaTeX-mode-hook
+          (lambda ()
+            (setq TeX-auto-untabify t     ; remove all tabs before saving
+                  TeX-engine 'xetex       ; use xelatex default
+                  TeX-show-compilation t) ; display compilation windows
+            (TeX-global-PDF-mode t)       ; PDF mode enable, not plain
+            (setq TeX-save-query nil)
+            (imenu-add-menubar-index)
+            (define-key LaTeX-mode-map (kbd "TAB") 'TeX-complete-symbol)))
+</pre>
+
+<h4>快速插入</h4>
+
+<p>在 tex 文档中，为了结构化的需要，经常会需要插入 '\chapter', '\section','\subsection' 命令。在 AucTeX 中，这些命令都可以通过 'C-c C-s' 一站式完成，你只需要告诉 AucTeX 你所需要插入章节层次(section level)，然后告诉 AucTeX 相应章节的标题，如果需要，你也可以添加相应的标签(可选)。</p>
+
+<p>类似的，在 tex 文档中，必不可少的 '\begin{document}' 与 '\end{document}，以及众多的类似的各种各样的环境，自己在编辑 tex 文档时，经常会遗忘去匹配相应的环境，然后在编译时候要花费时间去修改。于 AucTeX 里你只需要键入'C-c C-e' 然后告诉 AucTeX 你所希望插入文档的环境，例如你键入了 'math'，AucTeX 会悉心的插入数学环境 '\begin{math}' 与 '\end{math}'。</p>
+
+<p>AucTeX 还提供了 'C-c C-m' 快捷键供方便地插入宏命令，在大多数情况下 auxtex 都可以理解相应宏命令的参数个数并提示你一一输入。</p>
+
+<p>在使用这些快捷键时，你可以使用 TAB 自动补全，或是使用 'M-p' 与 'M-n'浏览命令历史记录，也可以使用上下快捷键，但是相信众 emacs 党应该还是键盘流多，会更习惯前者。</p>
+
+<p>此处涉及的相关快捷键如下：</p>
+
+<table border="1">
+<tr>
+<td>C-c C-s</td><td>插入章节</td>
+</tr>
+<tr>
+<td>C-c C-e</td><td>插入 LaTex 环境</td>
+</tr>
+<tr>
+<td>C-c C-j</td><td>插入列表 item</td>
+</tr>
+<tr>
+<td>C-c ]</td><td>闭合 LaTeX 环境</td>
+</tr>
+<tr>
+<td>C-c C-m</td><td>插入 Tex 宏</td>
+</table>
+
+<h4>快速更改字体</h4>
+
+<p>AucTeX 也提供了一系列方便的快捷键用以方便的插入指定应该文本如何格式化的命令，这系列命令一致以 'C-c C-f' 为前缀，以 'C- ' 结尾告诉 AucTeX 你具体需要如何排版文本。</p>
+
+<table border="1">
+<tr>
+<td>C-c C-f C-b</td><td>插入粗体文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-i</td><td>插入斜体文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-e</td><td>插入强调文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-s</td><td>插入微斜体文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-r</td><td>插入罗马体文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-f</td><td>插入无衬线体文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-t</td><td>插入打印机体字体</td>
+</tr>
+<tr>
+<td>C-c C-f C-c</td><td>插入小型大写文本</td>
+</tr>
+<tr>
+<td>C-c C-f C-d</td><td>删除字体信息</td>
+</table>
+
+<p>默认情况下，输入以上的快捷键时，会假定插入新的相应格式化文本，如果你希望更改已存在文本的话，需要先设定区域，然后再使用这些快捷键。</p>
+
+<h4>一站式的编译、查看、打印服务</h4>
+
+<p>如果你已经完成了 tex 文档的编写想查看排版后输出的 pdf，试着输入 'C-c C-c'，AucTeX 会询问你想调用那项命令，在大多数情形中，AucTeX 所建议给出的命令往往可以符合你的需要。例如，你刚刚完成对文档的修改，此时 AucTeX 所给出的建议命令为 'latex'，即建议你重新编译文档，而如果你已经完成对最新文档的编译，AucTeX 会建议你查看最新的 pdf，而不是再次对文档进行编译(如果需要更新文档的交叉索引信息，可能需要多次的编译)。</p>
+
+<p>如果 AucTeX 给出的建议命令不合适，你可以键入 TAB 查看当前可用的命令，然后再指定 AucTeX 运行相应的合适命令。</p>
+
+<p>在对于自定义查看文档命令的设置中，不推荐使用原来的'TeX-output-view-style'，而更推荐灵活性更强的 'TeX-view-program-list'与"TeX-view-program-selection"。'TeX-output-view-style' 是直接绑定指定类型与相应的 viewer，而对于后者，在不同系统平台之间你需要定义阅读器，并且对于不同的类型灵活绑定。</p>
+
+<p>'TeX-view-program-list' 控制 AucTeX 预定义的 viewer，包括符号名与具体定义所调用的命令或函数，预定义为 'TeX-view-program-list-builtin' 的内容，有兴趣可以查看一下该变量的内容。如果需要自定义，如在 windows 平台上，可能会定义 SumatraPDF 查看 pdf 文档，而把相应的符号名记为 SumatraPDF，那就可以使用如下的命令去定义。</p>
+
+<pre lang="lisp">
+(setq TeX-view-program-list
+      '(("SumatraPDF "SumatraPDF.exe %o")))
+</pre>
+
+<p>当然仅仅只是定义了符号名，而对于该符号名所对应的具体 viewer 在该平台是否可用，是需要使用者自己去选择控制的。更通用而言，你可能需要同时使用Linux 与 Windows 系统，那你需要分别定义其上平台的 viewer，如下的设置中就分别定义了 SumatraPDF, Gsview 用于 Windows 平台，Okular, Evince, Firefox用于Linux 平台。</p>
+
+<pre lang="lisp">
+(setq TeX-view-program-list
+      '(("SumatraPDF" "SumatraPDF.exe %o")
+        ("Gsview" "gsview32.exe %o")
+        ("Okular" "okular --unique %o")
+        ("Evince" "evince %o")
+        ("Firefox" "firefox %o")))
+</pre>
+
+<p>对于如上的示例而言，在 Windows 平台上绑定 SumatraPDF 为 pdf viewer，Miktex 的组件 Yap 为 dvi viewer，而在 Linux 平台上，或许需要 Okular 作为pdf 与 dvi 的 viewer。当然对于 Gnomer 而言，Evince 应该是比 Okular 更好的选择。</p>
+
+<p>PS:</p>
+
+<ul>
+<li><p>对于 windows 平台而言，需要确保命令在 PATH 路径下，如果没有在 PATH 路径下，请使用路径全名进行调用。</p></li>
+<li><p>由于自己没有 MacOsX 平台使用经验，所以没有对此作相关的 viewer 设置如果有需要，也可以自己设置。</p></li>
+</ul>
+
+<p>在设置好了 viewer 之后，就需要在不同类型的文件类型与相应的 viewer 之间进行绑定。'TeX-view-program-selection' 变量用于指定如何用 viewer 查看指定类型的文件。</p>
+
+<pre lang="lisp">
+(cond
+ ((eq system-type 'windows-nt)
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (setq TeX-view-program-selection '((output-pdf "SumatraPDF")
+                                                 (output-dvi "Yap"))))))
+
+ ((eq system-type 'gnu/linux)
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (setq TeX-view-program-selection '((output-pdf "Okular")
+                                                 (output-dvi "Okular")))))))
+</pre>
+
+<p>可以看出，使用后者绑定 viewer 与指定类型相对要更灵活的多，而 AucTeX 手册也推荐此种方式，而且感觉可读性也更好。而在以后的版本中，可能会移除'TeX-output-view-style' 变量。</p>
+
+<h3>进阶使用</h3>
+
+<h4>编译片段文件</h4>
+
+<p>编译片段文件是个很实用的功能，如果你的文档很庞大，但是你只是需要看一下最近编辑修改过的片段，这时就很有用。</p>
+
+<p>用快捷键设置好一个片段(region)，然后按下 'C-c C-r' 编译文件，然后再按 'C-c C-r' 就可以查看片段编译后的文件了。</p>
+
+<p>编译片段文件的过程中，AucTeX 先首先生成 _region_.tex 文件，然后再依次进行编译和查看的操作，当然你也可以设置 'TeX-region' 控制生成的文件名。而为了生成 _region_.tex 文件，AucTeX 需要知道那些是文档开始需要的内容(例如文档类，载入的宏包和自定义信息)，那些是文档结束的内容。在 AucTeX 中，这两者是由变量'TeX-header-end' 与 'TeX-trailer-start' 控制的。前者在 LaTeX mode 中默认为 '\begin{document}，而后者默认为\end{document}，因此AucTeX 会截取文件开始到 'TeX-header-end' 的内容和片段内容以及'TeX-trailer-start' 的内容组成 _region_.tex 文件。也可以简单的理解成 AucTeX 把原来文件的文档内容替换成了片段内容的过程。</p>
+
+<p>此外，设置好 region，按 'C-c C-t C-r' 可以固定一个 "region"，即使光标位置改变，设定的将要部分编译的"region"也不会改变，可以随时修改"region"中的内容，再按 'C-c C-t C-r' 取消该"region"。</p>
+
+<h4>多文件管理</h4>
+
+<p>在协作文档时，为了便于对文档进行管理，一般都会把文档根据内容拆分成几个部分，搭配使用 LaTeX 的 \include(\input in plainTeX) 命令对文件进行组织。</p>
+
+<p>举个例子，假设当前目录下有三个 tex 文件，master.tex, sectone.tex, secttwo.tex，其内容分别如下。</p>
+
+<p>master.tex:</p>
+
+<pre lang="latex" file="master.tex">
+\documentclass{article}
+\begin{document}
+\include{sectone}
+\include{secttwo}
+\end{document}
+</pre>
+
+<p>sectone.tex:</p>
+
+<pre lang="latex" file="sectone.tex">
+\section{one}
+hello, world!
+</pre>
+
+<p>secttwo.tex:</p>
+
+<pre lang="latex" file="secttwo.tex">
+\section{two}
+Don't be evil!
+</pre>
+
+<p>用 AucTeX 编辑 secttwo.tex 文件时，编译文件时就会出错，因为 AucTeX 无法知道当前文件所属的 master 文件，因此需要通知 AucTeX master 文件的信息。</p>
+
+<p>为了便于对文件进行组织和管理，AucTeX 允许你为文件设置文件变量(file variables)。因此你可以把 sectwo.tex 修改成如下内容。</p>
+
+<pre lang="latex" file="secttwo.tex">
+\section{two}
+Don't be evil!
+%%% Local Variables:
+%%% TeX-master: "master"
+%%% End:
+</pre>
+
+<p>现在再编译 secttwo.tex 文件，AucTeX 就可以知道 master.tex 文件为 master文件，AucTeX 会转去编译 master.tex 文件。因此，你需要在每个 tex 文件末尾添加相应的信息，文件一多，就会变得很繁琐。因此，AucTeX 提供了'TeX-master' 变量，可以设置其为 "master"，这样就可以通知所有的文件 master 文件总为 master.tex 文件。</p>
+
+<pre lang="lisp">
+(setq-default TeX-master "master")
+</pre>
+
+<p>当然，如果你不需要对多文件进行组织和管理，设置 'TeX-master' 为 t 即可，即假设当前的文件总为 master 文件。</p>
+
+
+<h3>reftex 与 preview 的使用</h3>
+
+<p>reftex 和 preview 是使用 tex 的两个很方便的插件，reftex 为是 emacs 内置的插件，preview 也是 AucTeX 的组成部件。这两个组件使用的不是很多，但还是很有用。此处仅仅是对它们多简要的介绍，如果需要，可以查看相应的文档。</p>
+
+<p>reftex 可以按文档目录结构浏览。在 LaTeX 缓冲中，按 C-c =，Emacs 会打开一个类似文档的目录的缓冲。</p>
+
+<p>当然 reftex 的功能远远比此强大，更方便之处是配合 bibtex 可以很方便的插入参考文献。</p>
+
+<p>preview 的好处是可以是 tex 文件中的数学公式和图片可视化，于相应的命令处用图片替代，当然这需要你的 emacs 开启图片支持和 ghostscript。</p>

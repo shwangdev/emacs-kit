@@ -1,0 +1,163 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-12 23:27:25 Friday by ahei" -->
+
+<!-- w3m的小bug: w3m-auto-show -->
+
+<!-- Emacs, Elisp, 中级 -->
+
+<img class="alignright" title="bug" src="screenshots/bug.gif" width="100" height="100"/>
+
+好久没去上水木了, 今天上去瞧瞧. 本来以为几天不去了, 会有好多帖子, 上去之后, 只有一点帖子, 有点失望, 呵呵.
+
+废话少说, 看到一个网友的问题:<!--more-->
+求帮看看这句话为什么老有错误信息
+<pre lang="lisp" line="1">
+(define-prefix-command 'f9-map)
+(global-set-key (kbd "<f9>") 'f9-map)
+(global-set-key (kbd "<f9> 3")
+        (lambda() (interactive)
+        (w3m-goto-url
+"http://www.tianya.cn/publicforum/articleslist/0/no05.shtml")))
+
+目的是想按f9 3, Emacs会调w3m去打开某个页面.
+现在能work, 但老是提示error
+出错信息是:
+Error in post-command-hook: (wrong-type-argument symbolp
+(lambda nil (interactive)
+(w3m-goto-url http://www.tianya.cn/publicforum/articleslist/0/no05.shtml)))
+
+不知哪个兄弟有时间帮看下, 谢了~
+</pre>
+我去emacs scratch下eval:
+<pre lang="lisp" line="1">
+(define-prefix-command 'f9-map)
+(global-set-key (kbd "<f9>") 'f9-map)
+(global-set-key (kbd "<f9> 3")
+        (lambda() (interactive)
+        (w3m-goto-url
+"http://www.tianya.cn/publicforum/articleslist/0/no05.shtml")))
+</pre>
+然后按了F9 3, 果然如这位网友所说, 能打开那个网页, 但是出现那个post-command-hook那个错误.
+
+很奇怪, 这段代码没问题啊, 怎么会出错呢?
+
+我抱着试试的态度, 看把那个lambda表达式改为命令行不行, 即把
+<pre lang="lisp" line="1">
+(lambda() (interactive)
+  (w3m-goto-url
+  "http://www.tianya.cn/publicforum/articleslist/0/no05.shtml"))
+</pre>
+改为
+<pre lang="lisp" line="1">
+(defun test() (interactive)
+(w3m-goto-url
+"http://www.tianya.cn/publicforum/articleslist/0/no05.shtml"))
+</pre>
+然后再:
+<pre lang="lisp">
+(global-set-key (kbd "<f9> 3") 'test)
+</pre>
+这时, 再按F9 3已经可以正确运行了. 我再这样:
+<pre lang="lisp">
+(global-set-key (kbd "C-x M-p") 'test)
+</pre>
+然后按C-x M-p也没有错误, 看来很有可能是那个lambda表达式惹的祸.
+
+还有, 报错是与post-command-hook相关的. post-command-hook作用如下(C-h v post-command-hook):
+<pre lang="text">
+Normal hook run after each command is executed.
+If an unhandled error happens in running this hook,
+the hook value is set to nil, since otherwise the error
+might happen repeatedly and make Emacs nonfunctional.
+</pre>
+这个hook就是每个命令执行完之后都会运行这个hook中的函数, 如果某个函数运行出错后, 这个hook讲被置为nil.(与其对应的pre-command-hook, 即每个命令执行前执行的hook)
+按F9 3出错后, 我去那个w3m buffer去查看了一下post-command-hook的值, 确实已经变为nil了, 看来错误应该与它有关. 所以我就去w3m的代码里搜索了一下post-command-hook, 结果如下:
+<pre lang="lisp" line="1">
+-*- mode: grep; default-directory: "~/emacs/trunk/lisps/emacs-w3m/" -*-
+Grep started at Thu Dec 24 22:51:38
+
+find . -type f ! -wholename "*/.svn*" ! -wholename "*~" -print0 | xargs -0 -e grep -nH -e post-command-hook
+./doc/emacs-w3m-ja.texi:3753:of @code{post-command-hook}.
+./doc/emacs-w3m.texi:3699:of @code{post-command-hook}.
+./w3m.el:1023:way of `post-command-hook'."
+./w3m.el:8767:`post-command-hook' by `w3m-buffer-setup'."
+./w3m.el:8788:  (w3m-add-local-hook 'post-command-hook 'w3m-check-current-position)
+./mime-w3m.el:90:by way of `post-command-hook'."
+./mime-w3m.el:190:      (w3m-add-local-hook 'post-command-hook
+./ChangeLog.1:192:  `post-command-hook', instead of `w3m-print-this-url-after-command'.
+
+Grep finished (matches found) at Thu Dec 24 22:51:39
+</pre>
+打开那些文件对应行, 与post-command-hook有关系的也只有w3m-after-cursor-move-hook,w3m-check-current-position, mime-w3m-after-cursor-move-hook和mime-w3m-check-current-position了. w3m-after-cursor-move-hook的值为:
+<pre lang="lisp" line="1">
+'(w3m-highlight-current-anchor
+  w3m-print-this-url
+  w3m-auto-show)
+</pre>
+mime-w3m-after-cursor-move-hook的值为:
+<pre lang="lisp">
+'(w3m-print-this-url)
+</pre>
+我大致看了下这几个函数, 没看出什么问题来. 关键也没看出与刚才那个lambda表达式相关的信息, 太奇怪了, 遂决定调试一下那个w3m-goto-url命令, 看它有没有问题.
+
+在w3m-goto-url命令里面执行M-x edebug-defun, 对w3m-goto-url命令设置断点. 然后按F9 3, 在w3m-goto-url里面短住, 我不停的按n, 一步一步的调, 始终没出错, 等运行完这个命令才出错, 看来是与w3m-goto-url无关, 还是那个post-command-hook的问题.
+
+我现在没辙了, 突然想到, 刚才不是说可能与那个w3m-after-cursor-move-hook有关嘛, 这个hook是在w3m-check-current-position这个函数中调用的, 而w3m-check-current-position又是在w3m-buffer-setup中调用的, 而w3m-goto-url里面又调用了w3m-buffer-setup, 看来确实有可能与w3m-after-cursor-move-hook这个hook有关. 那么我先把它置为nil试试, 一试, 太好了, 果然不出错了, 看来肯定是它的问题了, 它的默认值是:
+<pre lang="lisp" line="1">
+'(w3m-highlight-current-anchor
+w3m-print-this-url
+w3m-auto-show)
+</pre>
+我一个一个的试, 最后发现只要加上w3m-auto-show, 就出错, 看来问题在w3m-auto-show这个函数, 我们来看看它的代码:
+<pre lang="lisp" line="1">
+(defun w3m-auto-show ()
+  "Scroll horizontally so that the point is visible."
+  (when (and truncate-lines
+	     w3m-auto-show
+	     (not w3m-horizontal-scroll-done)
+	     (not (and (eq last-command this-command)
+		       (or (eq (point) (point-min))
+			   (eq (point) (point-max)))))
+	     (or (memq this-command '(beginning-of-buffer end-of-buffer))
+		 (string-match "\\`i?search-" (symbol-name this-command))
+		 (and (markerp (nth 1 w3m-current-position))
+		      (markerp (nth 2 w3m-current-position))
+		      (>= (point)
+			  (marker-position (nth 1 w3m-current-position)))
+		      (<= (point)
+			  (marker-position (nth 2 w3m-current-position))))))
+    (w3m-horizontal-on-screen))
+  (setq w3m-horizontal-scroll-done nil))
+</pre>
+咋看上去没啥问题, 那么调试吧. M-x edebug-defun设置断点, 然后按F9 3, 停在w3m-auto-show这个函数里, 按n单步前进, 当运行到这行代码:
+<pre lang="lisp">
+(string-match "\\`i?search-" (symbol-name this-command))
+</pre>
+出错了. 这句话有什么问题吗? this-command是当前运行的命令, 我看了一下它的值是:
+<pre lang="lisp">
+(lambda nil (interactive) (w3m-goto-url "http://www.tianya.cn/publicforum/articleslist/0/no05.shtml"))
+</pre>
+然后我们再回头来看看那个错误提示:
+<pre lang="lisp" line="1">
+Error in post-command-hook: (wrong-type-argument symbolp (lambda nil (interactive) (w3m-goto-url http://www.tianya.cn/publicforum/articleslist/0/no05.shtml)))
+</pre>
+你发现了什么没? 错误提示的意思说那个lambda表达式不是一个符号. 真的是这样吗? 我们来试试. 在"*scratch*"里输入:
+<pre lang="lisp">
+(symbolp (lambda (message "")))
+</pre>
+然后在上面行尾按C-x C-e进行计算, 返回nil, 果然如此.
+
+终于真相大白了, 因为那个lambda表达式不是一个符号, 而symbol-name的参数要求为符号, 所以才产生了那个错误. 看来这是w3m的一个小小的bug.
+
+那么我们怎么来fix这个小bug呢?
+很简单, 在调用symbol-name之前判断一下即可, 即把
+<pre lang="lisp">
+(string-match "\\`i?search-" (symbol-name this-command))
+</pre>
+改为
+<pre lang="lisp" line="1">
+(string-match "\\`i?search-"
+              (if (symbolp this-command) (symbol-name this-command) ""))
+</pre>
+就可以了. 很简单吧. :)

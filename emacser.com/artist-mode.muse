@@ -1,0 +1,140 @@
+#title [published]emacs的artist-mode初探
+
+* 概述
+artist是一个emacs的内置lisp包。
+在artist-mode中，你可以使用鼠标或者键盘来画线(可以带箭头)、矩形、正方形、多边形、椭圆、圆和一些类似于水蒸气似的不规则图形，当然可以擦除，填出图形，还可以在其上写字。
+
+** 截图
+这是一个很不错的[[http://www.cinsk.org/emacs/emacs-artist.html][绘制单链表的截图flash]]
+
+这是一个[[http://www.lysator.liu.se/~tab/artist/emacs-shapes.html][画了一些形状的截图]], 这幅图画了一个[[http://www.lysator.liu.se/~tab/artist/emacs-a.html][A]].
+
+这是我工作时的一个绘制结果.
+[[http://fangzhzh.admindigest.com/pictures/2010/5/artist-mode.jpg]]
+
+* 为什么使用Artist-mode
+我经常在写程序的时候，希望在文档里画一些类的继承关系、包含关系什么的，以帮助读这个文件的人能够更好的理解代码，但是此处不能且不适合放一张jpg（要是h,cpp文件里能插图，那多拉风啊）。
+
+就考虑用plain-text的文本格式来绘图。初始时想用“-|+_”这几个符号来拼凑，但是工作效率太低，而且容易出错，一修改就几乎整个图作废。将有限的时间浪费在如此耗时，且没有技术含量的工作上，那还不就等于浪费生命啊，剩下来的时间多去看看twitter多好！
+
+正如截图中[[http://www.cinsk.org/emacs/emacs-artist.html][绘制单链表的截图flash]]所展示，artist-mode来做这件事情，那是最适合不过了。那么来初探一下emacs的artist-mode能够如何完成任务呢。
+
+* 怎么使用Mouse 绘制
+
+** 进入artist-mode
+<src lang="lisp">
+M-x artist-mode
+</src>
+
+** 离开artist-mode
+<src lang="lisp">
+M-x artist-mode-off
+</src>
+
+** 三个mouse
+*** mouse-2（鼠标中键）,shift mouse-2
+弹出一个菜单，从菜单里你可以选择要使用左键画什么[[#types][类型]]更改一些[[#setttings][设定]]
+*** mouse-1 ( 鼠标左键) , shift-mouse-1
+绘制部分由鼠标左键完成，请参考[[#operations][绘制操作]]。
+*** mouse-3 ( 鼠标右键) , shift mouse-3
+| mouse-3 | 删除鼠标下的一个字符 |
+| shift mouse-3 | 画出矩形框，删除框选所有字符 |
+
+#operations
+#types
+** 绘制操作（鼠标左键）
+| 操作 | 无shift | shift |
+| pen     | 单击，在鼠标点填充一个“填充符号”，默认为"."；按下左键，拖动，抬起，绘制填充符号组成的线 | 单击，在鼠标点填充一个“o”；按下左键，拖动，抬起，绘制一条从初始点到最终点的直线 |
+| Line        | 任意方向的线                                                                                    | 直线                                                                                |
+| Rectangle            | 矩形                                                                                              | 正方形[1]                                                                                 |
+| Poly-line                     | 任意方向的多边形                                                                                          | 每条线都是直线的多边形                                                                               |
+| Ellipses                              | 椭圆                                                                                                        | 圆[2]                                                                                                    |
+| Text                                      | 文本                                                                                                          | 覆盖式文本                                                                                                    |
+| Spray-can                                          | 喷雾器[3]                                                                                                           | 设置喷雾器的大小                                                                                                      |
+| Erase                                                   | 橡皮，擦掉一个字符                                                                                                           | 擦掉矩形内字符                                                                                                                  |
+| Vaporize                                                        | 擦除一行                                                                                                                         | 擦除所有相连的行                                                                                                                  |
+| Cut                                                                | 剪切矩形                                                                                                                             | 剪切正方形                                                                                                                             |
+| copy                                                                   | 复制矩形                                                                                                                                 | 复制正方形                                                                                                                                  |
+| paste                                                                       | 粘贴                                                                                                                                       | 粘贴                                                                                                                                          |
+| Flood-fill                                                                            | 填充工具，填充                                                                                                                                    | 填充                                                                                                                                              |
+** 一些说明
+*直线*：只能是垂直，水平，对角线
+
+箭头：绘制线，或多边形时，可以设置箭头，详细见[[#arrows][箭头]].
+
+#setttings
+** 设定
+| 设定选项 | 含义 |
+| Set fill         | 设定用来填充矩形和正方形的字符 |
+| Set line                 | 设定绘制线的时候使用的字符                  |
+| Erase char                         | 设置擦除的时候使用的字符                                |
+| Trimming                                   | 开关修剪行尾的功能（一个图画完，一行行尾的空格会被移除）                            |
+| Borders                                           | 开关在填充图形周围绘制行边界的功能                                                                                    |
+
+#arrows
+** 箭头
+在artist-mode中，有下面两个键
+<src lang="lisp">
+<		artist-toggle-first-arrow
+>		artist-toggle-second-arrow
+</src>
+就像他们的快捷键所展示，artist-toggle-first-arrow将一条直线的第一个字符变为<，而artist-toggle-second-arrow将一条线的最后一个字符变为>。
+
+* 命令
+
+** 基本命令
+| 命令                                                                                                  | 功能                                     |
+| M-x artist-key-set-point                                                                              | [[#artist-key-set-point][执行以下功能]]  |
+| M-x artist-select-operation                                                                           | 选择绘制类型                             |
+| M-x artist-next-line, M-x artist-previous-line, M-x artist-forward-char and M-x artist-backward-char. | 移动                                     |
+| M-x artist-select-fill-char                                                                           | 设置填充字符                             |
+| M-x artist-select-line-char                                                                           | 设置绘制时字符                           |
+| M-x artist-select-erase-char                                                                          | 设置擦除时使用字符                       |
+| M-x artist-toggle-rubber-banding                                                                      | 开关  rubber-banding功能（不知道是什么） |
+| M-x artist-toggle-trim-line-endings                                                                   | 开关修剪行尾的功能                       |
+| M-x artist-toggle-borderless-shapes                                                                   | 开关在填充图形周围绘制行边界的功能       |
+
+
+#artist-key-set-point
+*** artist-key-set-point 执行的功能
+ | 情况                     | 作用                                                                |
+ | lines/rectangles/squares | 设置起始/结束点                                                 |
+ | poly-lines               | 设置其中一个点， (使用 C-u M-x artist-key-set-point 设置结束点) |
+ | 擦除字符时               | 开关橡皮功能                                                    |
+ | 剪切，复制               | 设置区域/正方形 的 开始/结束点                                  |
+ | 粘贴时                   | 粘贴动作                                                        |
+
+** 箭头命令
+
+| M-x artist-toggle-first-arrow    |             设置/取消 在线/多线段开头的箭头         |
+| M-x artist-toggle-second-arrow   |             设置/取消 在线/多线段结尾的箭头 |
+
+
+** 选择操作
+| M-x artist-select-op-line               | 绘制线               |
+| M-x artist-select-op-straight-line      | 绘制直线      |
+| M-x artist-select-op-rectangle          | 绘制矩形          |
+| M-x artist-select-op-square             | 绘制正方形             |
+| M-x artist-select-op-poly-line          | 绘制多线段          |
+| M-x artist-select-op-straight-poly-line | 绘制直线组成的多线段 |
+| M-x artist-select-op-ellipse            | 绘制椭圆            |
+| M-x artist-select-op-circle             | 绘制圆             |
+| M-x artist-select-op-text-see-thru      | 写字（插入模式）   |
+| M-x artist-select-op-text-overwrite     | 写字（覆盖模式）  |
+| M-x artist-select-op-spray-can          | 喷雾器                |
+| M-x artist-select-op-spray-set-size     | 设置喷雾器的大小          |
+| M-x artist-select-op-erase-char         | 擦除字符          |
+| M-x artist-select-op-erase-rectangle    | 擦除矩形内字符          |
+| M-x artist-select-op-vaporize-line      | 擦除一行     |
+| M-x artist-select-op-vaporize-lines     | 擦除所有相连的行  |
+| M-x artist-select-op-cut-rectangle      | 剪切矩形          |
+| M-x artist-select-op-copy-rectangle     | 复制矩形          |
+| M-x artist-select-op-paste              | 粘贴                     |
+| M-x artist-select-op-flood-fill         | 填充               |
+
+有了以上的介绍，我将所有artist-mode的命令绘制为一张表格，再参考artist-mode的键绑定+自己绑定，键盘绘制会像用鼠标绘制一样顺手。
+
+
+[1] 我试验，此处并没有绘制正方形，难道是我的版本有问题，求确认。
+[2] 与[1]相同，我仍然没有得到圆，得到的是椭圆
+[3] 顾名思义，很拉风的东西，但是我感觉不实用

@@ -1,0 +1,210 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-03-10 10:53:13 Wednesday by ahei" -->
+
+<!-- "色向胆边生" － 记Emacs配色的超级武器：Icicles，Color Palette和DoReMi -->
+<!-- Emacs配色：Icicles，Color Palette和DoReMi -->
+
+<img class="alignright" title="Icicles" src="screenshots/icicles-logo.jpg" width="180" height="90"/>
+
+Emacs的定制性非常强大, 其颜色定制性当然也非常强大了, 不过我相信Emacser们在定制颜色的时候, 非常的不方便, 使用set-face-foreground, set-face-background, set-background-color, set-foreground-color等系列命令的时候只能根据颜色名字来选择颜色, 非常的不直观, 不像windows下那样能根据调色板来选择颜色, 那么Emacs下有没有windows下这样的调色板呢? 当然有! Emacs永远比windows下的工具强大!(:), windows粉丝不要扔鸡蛋啊, windows只适合做桌面, 开发方面它只是个原始社会的工具, 桌面方面它也不咋的, 只不过大家做的都不好，它就成老大了， :)), 哈哈, 跑题了, 我们继续来说Emacs。<!--more-->
+
+Emacs下定制颜色比较好的工具有<a href="http://www.emacswiki.org/emacs/Icicles" target="_blank">Icicles</a>, <a href="http://www.emacswiki.org/emacs/ColorPalette" target="_blank">Color Palette</a>, 以及<a href="http://www.emacswiki.org/emacs/DoReMi" _target="_blank">DoReMi</a>(这三个工具都是同一个作者<a href="http://www.emacswiki.org/emacs/DrewAdams" target="_blank">DrewAdams</a>写的, 这个作者还写了好多工具, 大家可以去他的EmacsWiki的<a href="http://www.emacswiki.org/emacs/DrewAdams" target="_blank">主页</a>上去看看)。我先说一下安装它们要注意的问题, 然后再来一个个的介绍它们.
+
+<h3>安装Icicles, Color Palette, DoReMi应该注意的问题</h3>
+Icicles中有一个frame-cmds.el, 它必须放在<a href="http://www.emacswiki.org/emacs/MultiTerm" target="_blank">MultiTerm</a>前面, 否则ediff退出时会报"Lisp nesting exceeds 'max-lisp-eval-depth'", 而icicles soft-require frame-cmds.el, 所以icicles也必须放在MultiTerm前面加载. 还有, Emacs22下面Icicles也必须放在kde-emacs前面加载, 否则会报shell-command是void-function.
+
+说完了安装时应该注意的问题, 我们来分别介绍它们.
+
+<h3>Icicles</h3>
+要是用Icicles, 先要激活icy-mode(M-x icy-mode), 不过激活后会与ido有冲突, 所以我一般只有在配置颜色的时候才会激活icy-mode, 平时是关着的, 关于与ido冲突这个问题, 据作者说是ido操作minibuffer的方法和其按键的绑定不是兼容的方法, 而Icicles操作minibuffer的方法才是与正常的操作minibuffer的方法是接近的, 关于这个, 大家可以看<a href="http://www.emacswiki.org/emacs/IciclesDiscussion#IdoAndIcicles" target="_blank">这里</a>. 激活了icy-mode后, 再使用set-face-foreground, set-face-background, set-background-color, set-foreground-color等系列命令的时候, 就不只是光看到颜色名字了, 还能看到颜色的直观显示, 截图如下:
+[caption width="150" caption="Icicles的颜色选择"]<a href="screenshots/icicles-faces.png" rel="lightbox"><img title="Icicles faces" src="screenshots/thumbs/thumbs_icicles-faces.png" alt="Icicles的颜色选择" width="150" height="150" /></a>[/caption]
+这样，挑选好看的颜色就方便多了。而且在按tab进行补全的时候，还可以按C-up，C-down，C-prior，C-next来使当前选中的候选颜色生效，当然，按C-g退出命令的时候，刚才生效的颜色会取消。Icicles还有好多其他的强大功能，大家可以试试。
+
+<h3>DoReMi</h3>
+DoReMi可以直接操纵RGB，HSV分量来选择颜色，主要是这些命令: doremi-(bg|fg)+，doremi-face-(bg|fg)+，还可以根据颜色名称来循环的看颜色效果，比如：问先选择一个"yellow2"这个颜色，看看效果，不好看的话，不用退出命令，继续循环下一个颜色，非常方便，主要是doremi-(bg|fg)-color-name+，doremi-face-(bg|fg)-color-name+，以上在选择颜色的时候，都可以按C-g来恢复之前的颜色设置。
+
+对颜色不太敏感的或者懒的自己来配色的同志可以使用<a href="color-theme.html" target="_blank">Color Theme</a>, 使用Color theme选择颜色主题的时候，要一个一个的去试，有点麻烦，doremi-color-themes+可以让你更方便的选颜色主题。Color theme还有一个更好用的命令color-theme-print, 它可以把你当前的颜色设置制作成Color theme，我就做了一个Color theme，请看<a href="color-theme.html" target="_blank">这里</a>。
+DoReMi配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/doremi-settings.el" target="_blank">这里</a>，配置如下：
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2009-11-18 00:46:57 Wednesday by ahei>
+
+(require 'doremi)
+(require 'doremi-cmd)
+(require 'doremi-mac)
+(require 'thumb-frm)
+(require 'menu-bar+)
+(require 'zoom-frm)
+
+;; (require 'setup-keys)
+(require 'facemenu+)
+
+(setq doremi-up-keys '(?\M-p ?p))
+(setq doremi-down-keys '(?\M-n ?n))
+
+(setq doremi-RGB-increment-factor 256)
+</pre>
+
+<h3>Color Palette</h3>
+Color Palette是一个非常强大的配色工具，直接使用M-x facemenup-palette-face-at-point打开Color Palette, 这个命令会选择当前光标下的face的前景色作为待编辑的颜色，也可以使用M-x facemenup-palette-face，这个命令会提示你输入一个face，然后使用它的前景色作为待编辑的颜色。打开后就是一个调色板, 就像下面这样:
+[caption width="150" caption="Emacs中的调色板"]<a href="screenshots/palette.png" rel="lightbox"><img title="palette" src="screenshots/thumbs/thumbs_palette.png" alt="Emacs中的调色板" width="150" height="150" /></a>[/caption]
+然后我们可以使用方向键或者h，j，k，l来上下移动光标，或者按J，H，K，L来快速移动光标(这些按键以及上面的命令都是我配置后的)，选到一个满意的颜色后，按m或者回车键使这个颜色生效，不过这个调色板打开的时候有点慢，更新颜色的时候也有点慢。按f选择正在编辑的face的前景色进行编辑，b选择face的背景色进行编辑，F恢复face的前景色，B恢复face的背景色，r则一起恢复前景色和背景色，d会显示当前编辑的颜色，C拷贝当前的颜色，使用C-x k关闭调色板的时候，刚才所做的颜色修改都会恢复，其他譬如q或者系统关闭按钮退出，则不恢复。
+Color Palette配置文件在<a href="http://code.google.com/p/dea/source/browse/trunk/my-lisps/palette-settings.el" target="_blank">这里</a>，配置如下：
+<pre lang="lisp" line="1">
+;; -*- Emacs-Lisp -*-
+
+;; Time-stamp: <2009-11-19 15:14:32 Thursday by ahei>
+
+(require 'palette)
+
+(defun blink-cursor-mode-disable ()
+  "Disable `blink-cursor-mode'."
+  (interactive)
+  (blink-cursor-mode -1))
+
+(add-hook 'palette-mode-hook 'blink-cursor-mode-disable)
+
+(defmacro def-palette-move-command (move-command speed)
+  "Make definition of command which palette move quickly."
+  `(defun ,(concat-name move-command "-quickly") ()
+     ,(concat move-command " quickly.")
+     (interactive)
+     (,(symbol-function (intern move-command)) ,speed)))
+
+(apply-args-list-to-fun
+ 'def-palette-move-command
+ `(("palette-down"  7)
+   ("palette-up"    7)
+   ("palette-left"  7)
+   ("palette-right" 7)))
+
+(apply-define-key
+ palette-mode-map
+ `(("j"     palette-down)
+   ("k"     palette-up)
+   ("h"     palette-left)
+   ("l"     palette-right)
+   ("J"     palette-down-quickly)
+   ("K"     palette-up-quickly)
+   ("H"     palette-left-quickly)
+   ("L"     palette-right-quickly)
+   ("r"     palette-face-restore-bg-fg)
+   ("f"     palette-set-face-changed-to-foreground)
+   ("b"     palette-set-face-changed-to-background)
+   ("B"     facemenup-face-bg-restore)
+   ("F"     facemenup-face-fg-restore)
+   ("d"     palette-disply-which-in-changine)
+   ("m"     palette-pick-background-at-point)
+   ("C"     palette-copy-current-color)
+   ("C-x k" palette-quit-restore-bg-fg)))
+
+(defun kill-palette-buffers (frame)
+  (when (get-buffer "Palette (Hue x Saturation)") (kill-buffer "Palette (Hue x Saturation)"))
+  (when (get-buffer "Brightness") (kill-buffer "Brightness"))
+  (when (get-buffer "Current/Original") (kill-buffer "Current/Original")))
+
+(add-to-list 'delete-frame-functions 'kill-palette-buffers)
+
+(if window-system
+    (let ((font (car (x-list-fonts "-outline-Courier New-normal-normal-normal-mono-6-*-*-*-c-*-iso8859-1" nil nil 1))))
+      (if font
+          (setq palette-font font))))
+
+(apply-define-key
+ global-map
+ `(("C-x M-F" facemenup-palette-face)
+   ("C-x M-P" facemenup-palette-face-at-point)))
+
+(defvar facemenup-palette-change-face-bg nil "Face background be changed or not.")
+(defvar facemenup-last-face-color nil "Last face color used.")
+
+(defun palette-quit-restore ()
+  "Quite palette and restore face changed."
+  (interactive)
+  (palette-quit)
+  (palette-face-restore))
+
+(defun palette-quit-restore-bg-fg ()
+  "Quite palette and restore face changed."
+  (interactive)
+  (palette-quit)
+  (palette-face-restore-bg-fg))
+
+(defun palette-face-restore ()
+  "Restore face have changed."
+  (interactive)
+  (unless (or (string= facemenup-last-face-color palette-current-color)
+              (string= (hexrgb-color-name-to-hex facemenup-last-face-color) palette-current-color))
+    (if facemenup-palette-change-face-bg
+        (facemenup-face-bg-restore)
+      (facemenup-face-fg-restore))))
+
+(defun palette-face-restore-bg-fg ()
+  "Restore face background and foreground have changed."
+  (interactive)
+  (facemenup-face-bg-restore)
+  (facemenup-face-fg-restore))
+
+(defun facemenup-palette-face-at-point (&optional is-bg)
+  "Open palette and set face at point to face which to be changed."
+  (interactive "P")
+  (let (face (hl-line hl-line-mode))
+    (if hl-line
+        (hl-line-mode -1))
+    (setq face (eyedrop-face-at-point))
+    (if hl-line
+        (hl-line-mode 1))
+    (if face
+        (facemenup-palette-face face is-bg)
+      (call-interactively 'facemenup-palette-face))))
+
+(defun facemenup-palette-face (face &optional is-bg)
+  "Open palette and set face FACE to face which to be changed."
+  (interactive
+   (list
+    (read-face-name
+     (concat "Face whose " (if current-prefix-arg "background" "foreground") " to change"))
+    current-prefix-arg))
+  (setq facemenup-palette-change-face-bg is-bg)
+  (let ((color
+         (if is-bg
+             (facemenup-face-bg face)
+           (facemenup-face-fg face))))
+    (setq facemenup-last-face-bg (facemenup-face-bg face))
+    (setq facemenup-last-face-fg (facemenup-face-fg face))
+    (setq facemenup-last-face-color color)
+    (setq facemenup-last-face-changed face)
+    (when facemenup-palette-update-while-editing-flag
+      (palette-set-face-changed-to-foreground is-bg))
+    (condition-case nil
+        (palette color)
+      (quit (set-face-foreground face color)))))
+
+(defun palette-set-face-changed-to-foreground (&optional is-bg)
+  "Set face change color to foreground."
+  (interactive "P")
+  (setq facemenup-palette-change-face-bg is-bg)
+  (setq palette-action
+        `(lambda ()
+           ,(if is-bg
+                `(set-face-background facemenup-last-face-changed palette-current-color)
+              `(set-face-foreground facemenup-last-face-changed palette-current-color))))
+  (message (concat "Change to " (if is-bg "back" "fore") "ground")))
+
+(defun palette-set-face-changed-to-background (&optional is-fg)
+  "Set face change color to background."
+  (interactive "P")
+  (palette-set-face-changed-to-foreground (not is-fg)))
+
+(defun palette-disply-which-in-changine ()
+  "Display which face in changing on palette."
+  (interactive)
+  (message (concat "Color changing is: %s's " (if facemenup-palette-change-face-bg "back" "fore") "ground") facemenup-last-face-changed))
+(defun palette-copy-current-color ()
+  "Copy current color."
+  (interactive)
+  (kill-new palette-current-color)
+  (message "Color %s copied." palette-current-color))
+</pre>

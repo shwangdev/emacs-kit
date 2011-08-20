@@ -1,0 +1,398 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-08-05 11:07:05 Thursday by taoshanwen" -->
+
+<!-- 用artist-mode画文本图 -->
+
+<!-- 初级, 其他 -->
+
+<img class="alignright" title="artist-mode" src="screenshots/artist-mode-logo.jpg" width="120" height="120"/>
+
+<h3>概述</h3>
+
+<p class="first">artist是一个emacs的内置lisp包。
+在artist-mode中，你可以使用鼠标或者键盘来画线(可以带箭头)、矩形、正方形、多边形、椭圆、圆和一些类似于水蒸气似的不规则图形，当然可以擦除，填出图形，还可以在其上写字。 <!--more--></p>
+
+<h4>截图</h4>
+
+<p class="first">这是一个很不错的<a href="http://www.cinsk.org/emacs/emacs-artist.html" target="_blank">绘制单链表的截图flash</a></p>
+
+<p>这是一个<a href="http://www.lysator.liu.se/~tab/artist/emacs-shapes.html" target="_blank">画了一些形状的截图</a>, 这幅图画了一个<a href="http://www.lysator.liu.se/~tab/artist/emacs-a.html" target="_blank">A</a>.</p>
+
+<p>这是我工作时的一个绘制结果.
+[caption width="150" caption="用artist-mode画文本图"]<a href="screenshots/artist-mode.jpg" rel="lightbox"><img src="screenshots/thumbs/thumbs_artist-mode.jpg"/></a>[/caption]
+
+
+<h3>为什么使用Artist-mode</h3>
+
+<p class="first">我经常在写程序的时候，希望在文档里画一些类的继承关系、包含关系什么的，以帮助读这个文件的人能够更好的理解代码，但是此处不能且不适合放一张jpg（要是h,cpp文件里能插图，那多拉风啊）。</p>
+
+<p>就考虑用plain-text的文本格式来绘图。初始时想用“-|+_”这几个符号来拼凑，但是工作效率太低，而且容易出错，一修改就几乎整个图作废。将有限的时间浪费在如此耗时，且没有技术含量的工作上，那还不就等于浪费生命啊，剩下来的时间多去看看twitter多好！</p>
+
+<p>正如截图中<a href="http://www.cinsk.org/emacs/emacs-artist.html" target="_blank">绘制单链表的截图flash</a>所展示，artist-mode来做这件事情，那是最适合不过了。那么来初探一下emacs的artist-mode能够如何完成任务呢。</p>
+
+
+<h3>怎么使用Mouse 绘制</h3>
+
+<h4>进入artist-mode</h4>
+
+<pre>
+M-x artist-mode
+</pre>
+
+
+<h4>离开artist-mode</h4>
+
+<pre>
+M-x artist-mode-off
+</pre>
+
+
+<h4>三个mouse</h4>
+
+<h5>mouse-2（鼠标中键）,shift mouse-2</h5>
+
+<p class="first">弹出一个菜单，从菜单里你可以选择要使用左键画什么<a href="#types">类型</a>更改一些<a href="#setttings">设定</a></p>
+
+
+<h5>mouse-1 ( 鼠标左键) , shift-mouse-1</h5>
+
+<p class="first">绘制部分由鼠标左键完成，请参考<a href="#operations">绘制操作</a>。</p>
+
+
+<h5>mouse-3 ( 鼠标右键) , shift mouse-3</h5>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>mouse-3</td>
+      <td>删除鼠标下的一个字符</td>
+    </tr>
+    <tr>
+      <td>shift mouse-3</td>
+      <td>画出矩形框，删除框选所有字符</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><a name="operations" id="operations"></a>
+<h4><a name="types" id="types"></a>绘制操作（鼠标左键）</h4></p>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>操作</td>
+      <td>无shift</td>
+      <td>shift</td>
+    </tr>
+    <tr>
+      <td>pen</td>
+      <td>单击，在鼠标点填充一个“填充符号”，默认为&quot;.&quot;；按下左键，拖动，抬起，绘制填充符号组成的线</td>
+      <td>单击，在鼠标点填充一个“o”；按下左键，拖动，抬起，绘制一条从初始点到最终点的直线</td>
+    </tr>
+    <tr>
+      <td>Line</td>
+      <td>任意方向的线</td>
+      <td>直线</td>
+    </tr>
+    <tr>
+      <td>Rectangle</td>
+      <td>矩形</td>
+      <td>正方形<sup><a class="footref" name="fnr.1" href="#fn.1">1</a></sup></td>
+    </tr>
+    <tr>
+      <td>Poly-line</td>
+      <td>任意方向的多边形</td>
+      <td>每条线都是直线的多边形</td>
+    </tr>
+    <tr>
+      <td>Ellipses</td>
+      <td>椭圆</td>
+      <td>圆<sup><a class="footref" name="fnr.2" href="#fn.2">2</a></sup></td>
+    </tr>
+    <tr>
+      <td>Text</td>
+      <td>文本</td>
+      <td>覆盖式文本</td>
+    </tr>
+    <tr>
+      <td>Spray-can</td>
+      <td>喷雾器<sup><a class="footref" name="fnr.3" href="#fn.3">3</a></sup></td>
+      <td>设置喷雾器的大小</td>
+    </tr>
+    <tr>
+      <td>Erase</td>
+      <td>橡皮，擦掉一个字符</td>
+      <td>擦掉矩形内字符</td>
+    </tr>
+    <tr>
+      <td>Vaporize</td>
+      <td>擦除一行</td>
+      <td>擦除所有相连的行</td>
+    </tr>
+    <tr>
+      <td>Cut</td>
+      <td>剪切矩形</td>
+      <td>剪切正方形</td>
+    </tr>
+    <tr>
+      <td>copy</td>
+      <td>复制矩形</td>
+      <td>复制正方形</td>
+    </tr>
+    <tr>
+      <td>paste</td>
+      <td>粘贴</td>
+      <td>粘贴</td>
+    </tr>
+    <tr>
+      <td>Flood-fill</td>
+      <td>填充工具，填充</td>
+      <td>填充</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h4>一些说明</h4>
+
+<p><em>直线</em>：只能是垂直，水平，对角线</p>
+
+<p>箭头：绘制线，或多边形时，可以设置箭头，详细见<a href="#arrows">箭头</a>.</p>
+
+<h4><a name="setttings" id="setttings"></a>设定</h4>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>设定选项</td>
+      <td>含义</td>
+    </tr>
+    <tr>
+      <td>Set fill</td>
+      <td>设定用来填充矩形和正方形的字符</td>
+    </tr>
+    <tr>
+      <td>Set line</td>
+      <td>设定绘制线的时候使用的字符</td>
+    </tr>
+    <tr>
+      <td>Erase char</td>
+      <td>设置擦除的时候使用的字符</td>
+    </tr>
+    <tr>
+      <td>Trimming</td>
+      <td>开关修剪行尾的功能（一个图画完，一行行尾的空格会被移除）</td>
+    </tr>
+    <tr>
+      <td>Borders</td>
+      <td>开关在填充图形周围绘制行边界的功能</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4><a name="arrows" id="arrows"></a>箭头</h4>
+
+<p class="first">在artist-mode中，有下面两个键</p>
+
+<pre>
+< artist-toggle-first-arrow
+> artist-toggle-second-arrow
+</pre>
+就像他们的快捷键所展示，artist-toggle-first-arrow将一条直线的第一个字符变为&lt;，而artist-toggle-second-arrow将一条线的最后一个字符变为&gt;。
+
+
+
+<h3>命令</h3>
+
+<h4>基本命令</h4>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>命令</td>
+      <td>功能</td>
+    </tr>
+    <tr>
+      <td>M-x artist-key-set-point</td>
+      <td><a href="#artist-key-set-point">执行以下功能</a></td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-operation</td>
+      <td>选择绘制类型</td>
+    </tr>
+    <tr>
+      <td>M-x artist-next-line, M-x artist-previous-line, M-x artist-forward-char and M-x artist-backward-char.</td>
+      <td>移动</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-fill-char</td>
+      <td>设置填充字符</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-line-char</td>
+      <td>设置绘制时字符</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-erase-char</td>
+      <td>设置擦除时使用字符</td>
+    </tr>
+    <tr>
+      <td>M-x artist-toggle-rubber-banding</td>
+      <td>开关  rubber-banding功能（不知道是什么）</td>
+    </tr>
+    <tr>
+      <td>M-x artist-toggle-trim-line-endings</td>
+      <td>开关修剪行尾的功能</td>
+    </tr>
+    <tr>
+      <td>M-x artist-toggle-borderless-shapes</td>
+      <td>开关在填充图形周围绘制行边界的功能</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h5><a name="artist-key-set-point" id="artist-key-set-point"></a>artist-key-set-point 执行的功能</h5>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>情况</td>
+      <td>作用</td>
+    </tr>
+    <tr>
+      <td>lines/rectangles/squares</td>
+      <td>设置起始/结束点</td>
+    </tr>
+    <tr>
+      <td>poly-lines</td>
+      <td>设置其中一个点， (使用 C-u M-x artist-key-set-point 设置结束点)</td>
+    </tr>
+    <tr>
+      <td>擦除字符时</td>
+      <td>开关橡皮功能</td>
+    </tr>
+    <tr>
+      <td>剪切，复制</td>
+      <td>设置区域/正方形 的 开始/结束点</td>
+    </tr>
+    <tr>
+      <td>粘贴时</td>
+      <td>粘贴动作</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<h4>箭头命令</h4>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>M-x artist-toggle-first-arrow</td>
+      <td>设置/取消 在线/多线段开头的箭头</td>
+    </tr>
+    <tr>
+      <td>M-x artist-toggle-second-arrow</td>
+      <td>设置/取消 在线/多线段结尾的箭头</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<h4>选择操作</h4>
+
+<table class="muse-table" border="2" cellpadding="5">
+  <tbody>
+    <tr>
+      <td>M-x artist-select-op-line</td>
+      <td>绘制线</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-straight-line</td>
+      <td>绘制直线</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-rectangle</td>
+      <td>绘制矩形</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-square</td>
+      <td>绘制正方形</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-poly-line</td>
+      <td>绘制多线段</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-straight-poly-line</td>
+      <td>绘制直线组成的多线段</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-ellipse</td>
+      <td>绘制椭圆</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-circle</td>
+      <td>绘制圆</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-text-see-thru</td>
+      <td>写字（插入模式）</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-text-overwrite</td>
+      <td>写字（覆盖模式）</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-spray-can</td>
+      <td>喷雾器</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-spray-set-size</td>
+      <td>设置喷雾器的大小</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-erase-char</td>
+      <td>擦除字符</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-erase-rectangle</td>
+      <td>擦除矩形内字符</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-vaporize-line</td>
+      <td>擦除一行</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-vaporize-lines</td>
+      <td>擦除所有相连的行</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-cut-rectangle</td>
+      <td>剪切矩形</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-copy-rectangle</td>
+      <td>复制矩形</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-paste</td>
+      <td>粘贴</td>
+    </tr>
+    <tr>
+      <td>M-x artist-select-op-flood-fill</td>
+      <td>填充</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>有了以上的介绍，我将所有artist-mode的命令绘制为一张表格，再参考artist-mode的键绑定+自己绑定，键盘绘制会像用鼠标绘制一样顺手。</p>
+
+
+<p class="footnote"><a class="footnum" name="fn.1" href="#fnr.1">1.</a> 我试验，此处并没有绘制正方形，难道是我的版本有问题，求确认。
+<p class="footnote"><a class="footnum" name="fn.2" href="#fnr.2">2.</a> 与<sup><a class="footref" name="fnr.1" href="#fn.1">1</a></sup>相同，我仍然没有得到圆，得到的是椭圆
+<p class="footnote"><a class="footnum" name="fn.3" href="#fnr.3">3.</a> 顾名思义，很拉风的东西，但是我感觉不实用</p>

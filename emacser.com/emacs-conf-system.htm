@@ -1,0 +1,88 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-04-12 14:20:14 Monday by ahei" -->
+
+<!-- Emacs配置系统 -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#shell909090" target="_blank"><span style="color: #0000ff;"><b>shell909090</b></span></a>
+
+<img class="alignright" title="配置" src="screenshots/conf.gif"/>
+
+    emacs是个超级复杂的程序，尤其在配置问题上。贝壳的emacs要跨越三个环境。环境一，WindowsXP+Emacs23。环境二，Debian Testing + Xfce4。环境三，CentOS + Ssh。而整个的操作方式，个性设定需要保持一致。因此，引出一个问题。配置如何设置，跨平台，同步。<!--more-->
+    首先解决配置的同步问题，贝壳建立了一个svn仓库，用于存储该配置系统。然后在各个系统中co出这个仓库，当有需要调整时ci就可以保持同步了。 Linux下可以使用ln连接文件，Windows下比较麻烦点，NTFS格式(大多都是NTFS格式了吧)可以去sysinternals下一个叫做 junction的工具，以建立目录的工具链接，当然，.emacs文件只能手工拷贝了。
+    然后是配置的切分问题，如果只有一个文件，即使使用了版本控制，意义也不大。同时，将配置切割成不同的部分，控制载入过程，也可以跨平台和加速。以下是贝壳的.emacs文件。
+<pre lang="lisp" line="1">
+;; .emacs profile, written by shell.xu
+
+;; load other set
+(add-to-list 'load-path "~/.emacs.d/")
+(add-to-list 'load-path "~/.emacs.d/auto-complete/")
+(add-to-list 'load-path "~/.emacs.d/plugins/")
+(load "emacs-setup")
+(load "emacs-redef")
+(load "emacs-plugin")
+(cond
+ ((not (boundp 'initial-window-system)) (load "emacs-console"))
+ ((memq initial-window-system '(x w32))
+  (cond
+   ((memq system-type '(windows-nt cygwin)) (load "emacs-win"))
+   ((memq system-type '(gnu/linux)) (load "emacs-linux"))
+   )
+  )
+ )
+(load "emacs-keymap")
+</pre>
+    从上可以看出，我们先设定了.emacs.d作为默认加载路径——大多数文件都是放在这里。plugins是各种第三方程序的安装路径，这样这些程序就无需在各个平台上各自安装一次。而auto-complete单独拆出来纯粹是因为文件太多了。而后，我们加载了setup，这个文件内定义了emacs的基本配置，redef文件内定义了各种自定义函数和变量，plugin内控制了需要加载的各个插件和配置。
+    下面就有点复杂，简单来说，设定无Windows系统的时候加载emacs-console文件，有Windows的情况下，在windows下加载emacs-win，在linux下加载emacs-linux。这是实现跨平台设置的核心。
+    最后是keymap，经过上面复杂的设定，按键设置是统一的。
+    setup文件就不细说了，大家按照自己的习惯设定就好。下面我说几个redef中定义的函数。
+<pre lang="lisp" line="1">
+(defun switch-windows-buffer ()
+  (interactive)
+  (let ((this-buffer (window-buffer)))
+    (switch-to-buffer (window-buffer (next-window (selected-window))))
+    (switch-to-buffer-other-window this-buffer)
+    (other-window 1)
+    )
+)
+</pre>
+    这个函数的目标是用热键交换两个窗口的位置。如果你经常用C-x 3分栏，并且在两者间跳来跳去的话，有的时候往往希望两者的位置换一下。通常都是C-x b切换当前的窗口，然后C-x o切到隔壁去再换。这个太繁琐了。
+<pre lang="lisp" line="1">
+(defun popup-term ()
+  (interactive)
+  (apply 'start-process "terminal" nil popup-terminal-command)
+  )
+</pre>
+    这个函数是用于在当前文件所在路径弹出一个term的。也许有人说了，emacs有term啊。问题是，那个term只能开一个，而且有些东西操作不了。例如你如果想在这个term里面跑aptitude...
+    注意这个函数里面的popup-terminal-command，这个需要跨平台的，因此在windows和linux下设定各自不同。以下是两个典型设定，至于哪个是哪个我想都看得懂。注意console下面没必要搞这个。
+<pre lang="lisp" line="1">
+(setq popup-terminal-command '("xfce4-terminal"))
+(setq popup-terminal-command '("cmd" "/c" "start"))
+</pre>
+    然后我们说plugin，这个文件其实很简单，加载插件，然后设定就好。下面是一部分范例。
+<pre lang="lisp" line="1">
+;; load template
+(require 'template)
+;;here set the templates directory
+(setq template-subdirectories '("./" "Templates/" "~/.emacs.d/templates/"))
+(template-initialize)
+(setq template-auto-insert t)
+</pre>
+    这部分范例说明了如何载入template，并且进行设定。
+    下面是一点细节问题，tool-bar-mode这个设定相信多数人都有做。问题是，针对某些console系统，如果你设定了(tool-bar-mode -1)，立刻会报错。具体的条件是，编译的时候没有加入X的支持。因此，为了兼容性起见，针对console下就忽略这个设定。
+    最后，这些设定，推荐进行编译加速，包括所有第三方插件。不编译也是可以载入的，然而记得删除el文件对应的elc。否则emacs默认载入elc，从而导致你对el文件的修改无效——emacs是不认文件时间的。而显然，每个平台编译一遍是个脑残的事情。因此，我们需要写一个Makefile。
+<pre lang="make" line="1">
+DEPENDS=auto-complete plugins
+SOURCES=emacs-console.el emacs-keymap.el emacs-linux.el emacs-redef.el emacs-setup.el emacs-win.el
+
+build: $(SOURCES) emacs-plugin.el
+    for i in $(DEPENDS); do $(MAKE) -C $$i build || exit 1; done
+    emacs --batch -f batch-byte-compile $(SOURCES)
+    emacs --batch -l ~/.emacs -f batch-byte-compile emacs-plugin.el
+
+clean:
+    rm -rf *.elc
+    for i in $(DEPENDS); do $(MAKE) -C $$i clean || exit 1; done
+</pre>
+    注意，在每个目录中也要分别写Makefile，不过内容简单多了，基本就是emacs --batch -f batch-byte-compile *.el而已。而plugin这个文件比较特殊——他必须依赖于所有插件才能工作，所以最后才进行编译。
+    以上工作，基本完成了一个跨平台的emacs配置系统的组建。当然，如果你高兴向其中加入更多的内容，可以遵循以上规范进行。

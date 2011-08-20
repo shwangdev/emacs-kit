@@ -1,0 +1,469 @@
+<!-- -*- html -*- -->
+
+<!-- Time-stamp: "2010-05-07 09:32:41 Friday by ahei" -->
+
+<!-- 在Emacs中使用gdb调试程序 -->
+
+<!-- 中级, IDE -->
+
+<span style="color: #0000ff;">作者: </span><a href="about.htm#tigersoldier" target="_blank"><span style="color: #0000ff;"><b>Tiger Soldier</b></span></a>
+
+<img class="alignright" title="CEDET" src="screenshots/gdb/archer.jpg"/>
+
+<div id="table-of-contents">
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 引言 </a></li>
+<li><a href="#sec-2">2 准备工作：将调试信息编译在程序中 </a></li>
+<li><a href="#sec-3">3 开始：开启Emacs的调试模式GUD </a>
+<ul>
+<li><a href="#sec-3.1">3.1 运行gdb </a></li>
+<li><a href="#sec-3.2">3.2 gdb界面 </a></li>
+<li><a href="#sec-3.3">3.3 小结 </a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 调试：设置断点，控制程序流程 </a>
+<ul>
+<li><a href="#sec-4.1">4.1 设置、删除断点 </a></li>
+<li><a href="#sec-4.2">4.2 运行程序 </a></li>
+<li><a href="#sec-4.3">4.3 单步执行、运行到光标处 </a></li>
+<li><a href="#sec-4.4">4.4 继续运行程序 </a></li>
+<li><a href="#sec-4.5">4.5 小结 </a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5 察看变量的值 </a>
+<ul>
+<li><a href="#sec-5.1">5.1 本地变量buffer </a></li>
+<li><a href="#sec-5.2">5.2 察看变量值 </a></li>
+<li><a href="#sec-5.3">5.3 用工具提示显示变量值 </a></li>
+<li><a href="#sec-5.4">5.4 小结 </a></li>
+</ul>
+</li>
+<li><a href="#sec-6">6 输入输出 </a>
+<ul>
+<li><a href="#sec-6.1">6.1 单独的IO buffer </a></li>
+<li><a href="#sec-6.2">6.2 输入数据 </a></li>
+<li><a href="#sec-6.3">6.3 重定向到文件 </a></li>
+</ul>
+</li>
+<li><a href="#sec-7">7 按键绑定 </a></li>
+<li><a href="#sec-8">8 结尾 </a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h3 id="sec-1"><span class="section-number-2">1</span> 引言 </h3>
+<div class="outline-text-2" id="text-1">
+
+<p>Emacs除了具有强大的编辑功能，还可以作为调试工具gdb的前端，对程序进行调试。使用Emacs进行调试，可以将程序的编写与调试统一到Emacs中，并利用Emacs强大的功能辅助调试，是将Emacs作为IDE使用的一项必备功能。<!--more-->
+</p>
+<p>
+本文假定读者具有基本的程序调试知识，希望知道在Emacs下进行基本调试的对应操作。水平有限，欢迎拍砖。
+</p></div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h3 id="sec-2"><span class="section-number-2">2</span> 准备工作：将调试信息编译在程序中 </h3>
+<div class="outline-text-2" id="text-2">
+
+<p>要使程序能被gdb调试，需要在编译时加入调试所需的信息。如果使用gcc/g++进行编译，需要使用参数-g，如：
+</p>
+
+
+<pre lang="bash">
+gcc prog.c -g -o prog
+</pre>
+
+
+<p>
+如果使用 ./confiugre &amp;&amp; make 的编译流程，可以将使用如下方式引入-g参数：
+</p>
+
+
+<pre lang="bash" line="1">
+CFLAGS="-g" ./configure
+make
+</pre>
+
+
+<p>
+注意：不要加入任何优化参数（例如-O、-O2），不然调试时会有很灵异的现象发生……
+</p></div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h3 id="sec-3"><span class="section-number-2">3</span> 开始：开启Emacs的调试模式GUD </h3>
+<div class="outline-text-2" id="text-3">
+
+
+</div>
+
+<div id="outline-container-3.1" class="outline-3">
+<h4 id="sec-3.1"><span class="section-number-3">3.1</span> 运行gdb </h4>
+<div class="outline-text-3" id="text-3.1">
+
+<p>在编译好程序后，就可以开始调试了。直接运行gdb命令M-x gdb RET 在minibuffer中会出现需要执行的gdb命令。例如：gdb &ndash;annotate=3 prog 如果当前目录下有可执行文件（通常恰好是需要调试的文件），gdb会在其后自动补上可执行文件，否则需要在minibuffer中补上要调试的程序文件名。
+</p>
+<p>
+继续回车，Emacs的GUD（Grand Unified Debugger）就会关联到gdb并加载要调试的程序了。
+</p></div>
+
+</div>
+
+<div id="outline-container-3.2" class="outline-3">
+<h4 id="sec-3.2"><span class="section-number-3">3.2</span> gdb界面 </h4>
+<div class="outline-text-3" id="text-3.2">
+
+<p>启动gdb后，Emacs的界面会变成下面两种之一：
+</p>
+<table border="0">
+  <tr>
+    <td>
+[caption width="150" caption="GDB单窗格模式"]<a href="screenshots/gdb/emacs-gdb-single-window.png" rel="lightbox"><img src="screenshots/gdb/thumbs/thumbs_emacs-gdb-single-window.png" width="150" height="150" /></a>[/caption]
+    </td>
+    <td>
+[caption width="150" caption="GDB多窗格模式"]<a href="screenshots/gdb/emacs-gdb-many-windows.png" rel="lightbox"><img src="screenshots/gdb/thumbs/thumbs_emacs-gdb-many-windows.png" width="150" height="150" /></a>[/caption]
+    </td>
+    </tr>
+</table>
+<p>
+可以通过gdb-many-windows来切换这两种界面布局。
+</p>
+<p>
+如果界面被打乱了（例如，在minibuffer中使用补全，查看帮助，重新编译程序），可以使用gdb-restore-windows来恢复界面布局。
+</p></div>
+
+</div>
+
+<div id="outline-container-3.3" class="outline-3">
+<h4 id="sec-3.3"><span class="section-number-3">3.3</span> 小结 </h4>
+<div class="outline-text-3" id="text-3.3">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col align="left" /><col align="left" />
+</colgroup>
+<thead>
+<tr><th scope="col">命令</th><th scope="col">功能</th></tr>
+</thead>
+<tbody>
+<tr><td>gdb</td><td>启动gdb进行调试</td></tr>
+<tr><td>gdb-many-windows</td><td>切换单窗格/多窗格模式</td></tr>
+<tr><td>gdb-restore-windows</td><td>恢复窗格布局</td></tr>
+</tbody>
+</table>
+
+
+<p>
+接下来就要开始调试程序了。
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h3 id="sec-4"><span class="section-number-2">4</span> 调试：设置断点，控制程序流程 </h3>
+<div class="outline-text-2" id="text-4">
+
+
+</div>
+
+<div id="outline-container-4.1" class="outline-3">
+<h4 id="sec-4.1"><span class="section-number-3">4.1</span> 设置、删除断点 </h4>
+<div class="outline-text-3" id="text-4.1">
+
+<p>首先将断点设置在要调试的地方。有两种方法：
+</p>
+<p>
+第一种，在要设置断点的行左边的fringe上单击一下（就是文本左边与滚动条之间空出的那一块）。隐藏了fringe的朋友可以M-x fringe-mode显示它。
+</p>
+<p>
+第二种，使用默认快捷键C-x C-a C-b, 或者 C-x &lt;SPC&gt;。它们都关联到命令gud-break。
+</p>
+<p>
+无论使用哪种方法，fringe上都会在设置了断点的行上显示一个红点，表示这行设了断点：
+</p>
+
+[caption width="300" caption="fringe上的断点标记"]<a href="screenshots/gdb/emacs-gdb-fringe-breakpoint.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-fringe-breakpoint.png"/></a>[/caption]
+
+<p>
+同时，在断点buffer中也会显示已有的断点信息：
+</p>
+[caption width="610" caption="断点buffer"]<a href="screenshots/gdb/emacs-gdb-breakpoint-buffer.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-breakpoint-buffer.png"/></a>[/caption]
+
+<p>
+要删除断点，同样有两种对应的方法：在fringe的断点上单击一下，或者使用快捷键C-x C-a C-d（对应命令gud-remove）。
+</p>
+<p>
+可以在断点buffer上单击某个断点切换到断点所在位置。将光标移动到断点处回车也有同样的效果。
+</p>
+<p>
+在断点buffer上按空格键可以切换断点的激活和禁用状态。
+</p></div>
+
+</div>
+
+<div id="outline-container-4.2" class="outline-3">
+<h4 id="sec-4.2"><span class="section-number-3">4.2</span> 运行程序 </h4>
+<div class="outline-text-3" id="text-4.2">
+
+<p>设置好断点后就可以运行程序了。单击工具栏上的<img src="screenshots/gdb/emacs-gdb-toolbar-go.png"  alt="运行"/>就开始运行了。也可以使用gud-go命令来运行。奇怪的是没有任何默认快捷键绑定。
+</p>
+<p>
+当程序运行到断点时，程序会在断点处停下来，并自动打开停下的语句所在的代码文件。同时在fringe上在停下的语句处有三角形的指示器。
+</p>
+
+[caption width="280" caption="当前语句指示器"]<a href="screenshots/gdb/emacs-gdb-indicator.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-indicator.png"/></a>[/caption]
+
+<p>
+现在，我们来一步步运行程序。
+</p></div>
+
+</div>
+
+<div id="outline-container-4.3" class="outline-3">
+<h4 id="sec-4.3"><span class="section-number-3">4.3</span> 单步执行、运行到光标处 </h4>
+<div class="outline-text-3" id="text-4.3">
+
+<p>在调试中最常用的功能就是单步执行了。单步执行有两种：将函数调用作为一条语句执行（Next）和遇到函数时进入函数中进行调试（Step）。
+</p>
+<p>
+要使用第一种方式，默认快捷键是C-x C-a C-n，对应命令为gud-next。也可以单击工具栏上的 <img src="screenshots/gdb/emacs-gdb-toolbar-next.png"  alt="单步运行跳过函数" /> 。
+</p>
+<p>
+第二种方式的默认快捷键是C-x C-a C-s，对应命令为gud-step。也可以单击工具栏上的 <img src="screenshots/gdb/emacs-gdb-toolbar-step.png"  alt="单步运行进入函数" /> 。
+</p>
+<p>
+如果想跳出当前函数，可以使用命令gud-finish，默认快捷键为C-x C-a C-f，工具栏上有 <img src="screenshots/gdb/emacs-gdb-toolbar-finish.png"  alt="跳出函数" /> 可用。
+</p>
+<p>
+在Emacs中还可以运行到光标所在的行。使用命令gud-until即可，默认快捷键为C-x C-a C-u。<sup><a class="footref" name="fnr.1" href="#fn.1">1</a></sup>
+</p>
+<p>
+也可以直接把当前语句指示器拖到任意一行，程序会运行到那一行再停下来。
+</p></div>
+
+</div>
+
+<div id="outline-container-4.4" class="outline-3">
+<h4 id="sec-4.4"><span class="section-number-3">4.4</span> 继续运行程序 </h4>
+<div class="outline-text-3" id="text-4.4">
+
+<p>在程序中断后要继续运行程序，依然是使用gud-go命令或 <img src="screenshots/gdb/emacs-gdb-toolbar-go.png" alt="继续运行"/> ，也可以使用命令gud-cont，对应快捷键为C-x C-a C-r。
+</p></div>
+
+</div>
+
+<div id="outline-container-4.5" class="outline-3">
+<h4 id="sec-4.5"><span class="section-number-3">4.5</span> 小结 </h4>
+<div class="outline-text-3" id="text-4.5">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col align="left" /><col align="left" /><col align="left" />
+</colgroup>
+<thead>
+<tr><th scope="col">功能</th><th scope="col">命令</th><th scope="col">默认快捷键</th></tr>
+</thead>
+<tbody>
+<tr><td>添加断点</td><td>gud-break</td><td>C-x C-a C-b 或 C-x &lt;SPC&gt;</td></tr>
+<tr><td>删除断点</td><td>gud-remove</td><td>C-x C-a C-d</td></tr>
+<tr><td>运行/继续程序</td><td>gud-go</td><td>无</td></tr>
+<tr><td>单步执行，无视函数</td><td>gud-next</td><td>C-x C-a C-n</td></tr>
+<tr><td>单步执行，进入函数</td><td>gud-step</td><td>C-x C-a C-s</td></tr>
+<tr><td>跳出当前函数</td><td>gud-finish</td><td>C-x C-a C-f</td></tr>
+<tr><td>运行到光标所在语句</td><td>gud-until</td><td>C-x C-a C-u</td></tr>
+<tr><td>继续运行程序</td><td>gud-cont</td><td>C-x C-a C-r</td></tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h3 id="sec-5"><span class="section-number-2">5</span> 察看变量的值 </h3>
+<div class="outline-text-2" id="text-5">
+
+<p>调试的过程中免不了要查看变更的值。Emacs提供了方便地功能让我们查看变量的值。
+</p>
+</div>
+
+<div id="outline-container-5.1" class="outline-3">
+<h4 id="sec-5.1"><span class="section-number-3">5.1</span> 本地变量buffer </h4>
+<div class="outline-text-3" id="text-5.1">
+
+<p>如果打开了gdb-many-windows，在右上角会显示Locals buffer，其中显示了当前局部变量的值。如果显示的是寄存器（Register）buffer，单击左边的Locals就可以切换到Locals　buffer了。在其中可以方便地观察到各变量的值。
+</p>
+<p>
+如果没有打开gdb-many-windows，也可以使用gdb-display-locals-buffer来显示该buffer。
+</p></div>
+
+</div>
+
+<div id="outline-container-5.2" class="outline-3">
+<h4 id="sec-5.2"><span class="section-number-3">5.2</span> 察看变量值 </h4>
+<div class="outline-text-3" id="text-5.2">
+
+<p>遇到一些Locals里没有显示的变量，或者比较复杂的结构，就需要用到观察变量的功能了。
+</p>
+<p>
+将光标停留在要观察的变量上，执行命令gud-watch，可以将变量加入观察列表中。默认的快捷键是C-x C-a C-w。也可以使用工具栏上的 <img src="screenshots/gdb/emacs-gdb-toolbar-watch.png"  alt="查看变量" />。
+</p>
+<p>
+被观察的变量将在Speedbar中显示。对于复杂结构，可以单击Speedbar上的+号将其展开或收缩。在+号上按空格键也有相同的效果。<sup><a class="footref" name="fnr.2" href="#fn.2">2</a></sup>
+</p>
+<p>
+有时候Emacs观察的变量不是你所想要的，一般是a-&gt;b这类的情况。这时可以将要观察的部分选中，再使用上述方法即可。
+</p>
+
+[caption width="180" height="280" caption="在Speedbar中观察变量"]<a href="screenshots/gdb/emacs-gdb-watch-speedbar.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-watch-speedbar.png"/></a>[/caption]
+
+</div>
+
+</div>
+
+<div id="outline-container-5.3" class="outline-3">
+<h4 id="sec-5.3"><span class="section-number-3">5.3</span> 用工具提示显示变量值 </h4>
+<div class="outline-text-3" id="text-5.3">
+
+<p>可以用gud-tooltip-mode开启或关闭工具提示。开启后将鼠标指针停留在变量名上时将在工具提示中显示变量的值。
+</p>
+
+[caption width="360" caption="在工具提示中显示变量的值"]<a href="screenshots/gdb/emacs-gdb-tooltip-mode.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-tooltip-mode.png"/></a>[/caption]
+
+</div>
+
+</div>
+
+<div id="outline-container-5.4" class="outline-3">
+<h4 id="sec-5.4"><span class="section-number-3">5.4</span> 小结 </h4>
+<div class="outline-text-3" id="text-5.4">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col align="left" /><col align="left" /><col align="left" />
+</colgroup>
+<thead>
+<tr><th scope="col">功能</th><th scope="col">命令</th><th scope="col">默认快捷键</th></tr>
+</thead>
+<tbody>
+<tr><td>观察变量</td><td>gud-watch</td><td>C-x C-a C-w</td></tr>
+<tr><td>展开/收缩变量</td><td></td><td>&lt;SPC&gt;</td></tr>
+<tr><td>开启/关闭工具提示</td><td>gud-tooltip-mode</td><td></td></tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h3 id="sec-6"><span class="section-number-2">6</span> 输入输出 </h3>
+<div class="outline-text-2" id="text-6">
+
+<p>如果程序需要与标准输入/输出交互，那么你很可能需要用到下面要介绍的功能。
+</p>
+</div>
+
+<div id="outline-container-6.1" class="outline-3">
+<h4 id="sec-6.1"><span class="section-number-3">6.1</span> 单独的IO buffer </h4>
+<div class="outline-text-3" id="text-6.1">
+
+<p>默认来说，程序的输入输出是在gdb buffer里显示的。这样输出信息和gdb信息混合在一起，阅读起来非常不便。这时候，你需要把输入输出单独显示在一个buffer里，方便查看。
+</p>
+<p>
+使用gdb-use-separate-io-buffer，可以在程序代码buffer右侧新建一个IO buffer，程序对标准输入输出的操作都会重定向到这里。再执行一次该命令则会隐藏。
+</p>
+
+[caption width="295" caption="IO buffer"]<a href="screenshots/gdb/emacs-gdb-io-buffer.png" rel="lightbox"><img src="screenshots/gdb/emacs-gdb-io-buffer.png"/></a>[/caption]
+
+</div>
+
+</div>
+
+<div id="outline-container-6.2" class="outline-3">
+<h4 id="sec-6.2"><span class="section-number-3">6.2</span> 输入数据 </h4>
+<div class="outline-text-3" id="text-6.2">
+
+<p>需要输入数据的时候，只需要在IO buffer中输入数据回车即可。已经输入的数据会被加粗，以和输出信息区分开来。
+</p></div>
+
+</div>
+
+<div id="outline-container-6.3" class="outline-3">
+<h4 id="sec-6.3"><span class="section-number-3">6.3</span> 重定向到文件 </h4>
+<div class="outline-text-3" id="text-6.3">
+
+<p>有时候我们已经准备好了用于输入的数据在文件中，以避免调试时烦琐的输入。这时候就需要在调试时进行输入输出重定向了。
+</p>
+<p>
+要进行重定向，只能使用gdb自带的功能。在gdb buffer中输入 run &lt; data.in &gt; data.out 就可以将标准输入重定向到data.in，将标准输出重定向到data.out了。
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-7" class="outline-2">
+<h3 id="sec-7"><span class="section-number-2">7</span> 按键绑定 </h3>
+<div class="outline-text-2" id="text-7">
+
+<p>说实话，gud自带的按键绑定实在是麻烦，使用一个功能要三次组合键才行，小姆指按Ctrl都按酸了。所以一般将常用的按键绑定在方便的位置，这样才能有和另的IDE一样的快感。
+</p>
+<p>
+以下是将F5、F7、F8分别绑定到gud-go、gud-step和gud-next的代码：
+</p>
+
+
+<pre lang="lisp" line="1">
+(add-hook 'gdb-mode-hook '(lambda ()
+                            (define-key c-mode-base-map [(f5)] 'gud-go)
+                            (define-key c-mode-base-map [(f7)] 'gud-step)
+                            (define-key c-mode-base-map [(f8)] 'gud-next)))
+</pre>
+
+
+
+<p>
+之所以绑定到c-mode-base-map上，是因为我基本上在代码buffer中调试。如果要在gdb-buffer中使用的话，需要使用gud-mode-map。如果想在所有buffer上使用的话，可以绑定到全局按键中：
+</p>
+
+<pre lang="lisp">
+(global-set-key [(f5)] 'gud-go)
+</pre>
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-8" class="outline-2">
+<h3 id="sec-8"><span class="section-number-2">8</span> 结尾 </h3>
+<div class="outline-text-2" id="text-8">
+
+<p>有了调试功能，Emacs作为一个IDE才算是完整了。本文介绍了在Emacs下使用gdb调试的基本方法，Emacs的调试功能还远不止这些，进一步学习可参阅 <a href="http://www.gnu.org/software/emacs/manual/html_node/emacs/index.html">Emacs Manual</a> 的 <a href="http://www.gnu.org/software/emacs/manual/html_node/emacs/Debuggers.html#Debuggers">Debuggers</a> 一节。
+</p>
+<p>
+由于我也是边学边写，一定有许多不足或者错误，还请各位多多指教。
+</p>
+
+
+</div>
+</div>
+<div id="footnotes">
+<h3 class="footnotes">Footnotes: </h3>
+<div id="text-footnotes">
+<p class="footnote"><sup><a class="footnum" name="fn.1" href="#fnr.1">1</a></sup> 注：我在使用时只有光标所在的行在当前行之后并且位于同一函数内才行，否则会跳到很奇怪的地方，还请高手指教。
+</p>
+<p class="footnote"><sup><a class="footnum" name="fn.2" href="#fnr.2">2</a></sup> 我在使用过程中经常出现展开没反应，或者加入新元素后才展开，运行几步才展开的情况，求高人讲解。
+</p>
+</div>
+</div>

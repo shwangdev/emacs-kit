@@ -1,0 +1,216 @@
+#+OPTIONS: author:nil timestamp:nil creator:nil
+
+介绍一些 emacs 功能强大的函数
+
+#+BEGIN_HTML
+<span style="color: #0000ff;">作者: </span><span style="color: #0000ff;"><b>xilbert</b></span>
+#+END_HTML
+
+** 字符串类
+
+string-match 函数： 用指定的正则表达式去匹配字符串，将匹配的结果放到 match-data中。（match-data 用于存储emacs中字符串模式匹配中的匹配结果） 让我们看一个例子吧！
+#+HTML: <!--more-->
+
+例 1：
+
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq mystr "The quick fox jumped quickly.")
+(string-match "\\(qu\\)\\(ick\\)"
+                   mystr)   =>副作用：将匹配结果存储到match-data中
+</pre>
+#+END_HTML
+这条语句的意思是：用\(qu\)\(ick\) 模式对mystr进行搜索，将匹配的结果存储，并且也存储分组1\(qu\) 和分组2 \(ick\)的匹配结果。
+                   
+那么怎么取出匹配的结果呢？ 答案是使用 match-string
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(match-string 0 mystr)      =>结果为quick，也就是模式匹配的结果
+(match-string 1 mystr)      =>结果为qu   ，也就是第一个分组的匹配结果
+(match-string 2 mystr)      =>结果为ick  ，也就是第二个分组的匹配结果
+</pre>
+#+END_HTML
+
+string-match 是用正则表达式去搜索字符串的，如果你想替换字符串，那怎么办呢？ 那就要用到replace-regexp-in-string。
+
+replace-regexp-in-string 函数：
+
+用指定的正则表示式对字符串去搜索，将搜索到的模式用指定的字符串对原字符串进行替换。这个函数是非破坏性的，不会将你的原字符串破坏，函数返回的结果就是替换结果。
+例1 ：
+假如你想将"d:/gnu/" 替换为"d:\\gnu\\" ，你可以这样写：
+
+#+BEGIN_HTML
+<pre lang="lisp">
+(replace-regexp-in-string "/" "\\\\" "d:/gnu/")
+</pre>
+#+END_HTML
+那么为什么将替代字符串写成\\\\,而不是\\  ？ 实际上在emacs的正则表示式中，\\\\才代表一个\,而emacs的普通字符串中\\代表\ 。
+
+问题1：emacs 的正则表示达式中\太多了，能不能用个函数将\(hello\) 转化为\\(hello\\) ?
+答案 ：我也想知道！在emacs 中，我还没找到哪个函数能将“\(hello\)"转化为"\\(hello\\)"，这是字符串转义的缘故。我只能用一个比较拙劣的方法来帮助我写emacs style regexp ——用一段perl代码：
+
+#+BEGIN_HTML
+<pre lang="perl" line="1">
+#!/usr/bin/perl
+print "please input a raw regexp ,i will generic a emacs style regexp\n";
+$str =<STDIN>;
+$str =~ s/\\/\\\\/g;
+print $str;
+</pre>
+#+END_HTML
+     
+问题2：如果你想将^ . * $ 等特殊字符作为普通字符，你不想手动写成\\^ ,\\. 等形式，有什么办法帮助你吗？
+答 ：用 regexp-quote 函数。 例：(regexp-quote "^") 自动生成"\\^"
+
+问题3：如果你想用正则表达式表达搜索"hello" 或"world" ,你不想手动写成"hello\\|world"，有无简化的办法？
+答： regexp-opt 可以办到。  例：(regexp-opt '("hello" "world")) 输出了"\\(?:hello\\|world\\)"
+
+让我们再次回到replace-regexp-in-string函数来，它的功能真的很强大，替代字符串中还可以引用分组
+例2 ： (replace-regexp-in-string "\\(hello\\)\\(world\\)" "\\2\\1" "helloworld")
+这个表达式的意思是：用\(hello\)\(world\)模式对“helloworld”进行搜索，将搜索到的结果用“\\2\\1”进行替换。函数返回了"worldhello"
+
+** hook类函数
+
+emacs 中存在大量的hook ，有emacs-lisp-mode-hook ，c-mode-hook 等，基本上一个mode就提供了一个hook 。那么hook的本质是什么，我们能不能设计一个自己的hook ？ 实际上，hook 是一个elisp 表，这个表中存放着要被调用的函数的符号(或代码）。
+让我们用一个例子说明一下吧！
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defvar myhook nil) ;;定义myhook为空表
+(add-hook 'myhook '(lambda ()
+          (insert "fun1 was called ")))  ;;将这个匿名函数1加入到myhook表中去
+
+(add-hook 'myhook '(lambda ()
+          (insert "fun2 was called "))) ;;将匿名函数2加入myhook表中去
+         
+(run-hooks 'myhook) ;; =>执行这条语句会在光标后插入fun2 was called fun1 was called
+</pre>
+#+END_HTML
+
+那么为什么会先执行匿名函数2呢，而不是匿名函数1呢？这是因为add-hook 会将函数插入到myhook列表的头部，并且run-hooks 是从myhook头执行到尾的，因此匿名函数2会先执行。
+那么这样设计有什么好处呢？好处是比较明显的，比如用户执行了(add-hook 'c-mode-hook 'myfun),其中myfun是要修改了c-mode中的某个变量值的，但不巧的是，系统在此之前就执行了(add-hook 'c-mode-hook 'firstfun),并且firstfun也要设置这个变量的值。那么通过这样设计，你的修改将不会成功（因为你的修改会被系统的系统覆盖），这样就保证了用户不能随意地改变mode的状态，保证了系统的稳定性。
+
+既然知道了hook就是一个表，那么我们也就可以用操作列表的方式来操作它了。
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(setq myhook (cdr myhook))      ;; =>丢弃myhook中的第一个函数
+(setq myhook (reverse myhook))  ;; =>将myhook反转，改变函数执行的顺序
+(setq myhook nil)               ;; =>将myhook清空
+</pre>
+#+END_HTML
+
+** 用来高亮的函数
+
+1、hi-lock-set-pattern 函数
+它的作用为在当前buffer中对匹配的模式应用用户指定的face
+我之前在text-mode 中打开outline-minor-mode，结果标题没有被高亮，经千辛万苦终于将问题解决，这得益于hi-lock-set-pattern函数。我是这样设置的：
+先定义一些face ，如下：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(defface cyan-face
+  '((t :foreground "cyan"))
+  "我自定义的cyan face")
+
+(defface yellow-face
+  '((t :foreground "yellow"))
+  "我自定义的yellow face")
+
+(defface magenta-face
+  '((((class color)) :foreground "magenta"))
+  "我自定义的magenta face")
+</pre>
+#+END_HTML
+
+这些face 都是从ahei-face.el中的，那里面还有许多其他的face。
+
+然后然加入下面的代码，让outline-minor-mode启动时执行hi-lock-set-pattern，将标题高亮。
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(add-hook 'outline-minor-mode-hook
+          '(lambda ()
+             (hi-lock-set-pattern "^\\*[^*]*?$" 'cyan-face)
+             (hi-lock-set-pattern "^\\*\\*[^*]*?$" 'yellow-face)
+             (hi-lock-set-pattern "^\\*\\*\\*[^*]*?$" 'magenta-face)))
+</pre>
+#+END_HTML
+
+2、hi-lock-unface-buffer
+既然有高亮的函数，就应该有取消高亮的函数，它就是hi-lock-unface-buffer了
+
+** 编译类函数
+ complie 函数非常强大，它的参数是个编译命令字符串，它会执行这个编译命令，执行完后会打开一个buffer，其主模式为compilation-mode。如果编译出错，会在它打开的buffer中输出出现错误的行数，这时就可以通过点击鼠标跳转到发生错误的代码处。如果编译成功，则会输出编译结果。
+我们可以这样设置编译命令:
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(compile "gcc hello.c")
+(compile "c++ hello.cpp")
+(compile "perl hello.pl")
+(compile "d:/python/python25.exe hello.py")
+</pre>
+#+END_HTML
+
+** 将这些函数串起来
+下面我会用一个例子将上面所讲的大部分函数串起来。
+需求 ：我想实现按f5就能编译当前buffer，并且要有错误定位功能，支持的语言可以添加（不要修改已经写好的代码）
+实际环境：window xp ，cygwin
+由于使用的是cygwin，调用gcc 时，gcc 需要cygwin类型的路径
+这是emacs 给出的路径类型： d:/gnu/
+在cygwin下是          ：/cygdirve/d/gnu
+
+实现：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+;;这个函数就是用来转换路径的
+(defun change-to-cygwin-style-path (emacs-style-path-on-w32)
+  (let ((full-path emacs-style-path-on-w32))
+    (replace-regexp-in-string "\\(\\w+?\\):\\(\\w*\\)" "/cygdrive/\\1\\2" full-path)))
+(change-to-cygwin-style-path (buffer-file-name))
+
+(defvar my-compile-hook nil)
+
+;;这是主函数，按f5执行此函数
+(defun my-compile-main-fun ()
+  (interactive)
+  (run-hooks  'my-compile-hook))
+
+;;这个函数用来编译现在用得到的语言写的代码，以后如果要用到其他语言，可以写个函数，然后加入到my-compile-hook中去。
+(defun orginal-compile-fun ()
+   (let ((mode major-mode)
+	(compstr nil))
+        (cond ((eq mode 'c-mode)
+	   (setq compstr (concat "gcc -std=\"c99\" " (change-to-cygwin-style-path (buffer-file-name)))))
+	  ((eq mode 'c++-mode)
+	   (setq compstr (concat "c++  " (change-to-cygwin-style-path (buffer-file-name)))))
+	  ((eq mode 'emacs-lisp-mode)
+	   (emacs-lisp-byte-compile))
+	  ((eq mode 'python-mode)
+	   (setq compstr (concat "python " (buffer-file-name)))
+	  )
+	  ((or (eq mode 'cperl-mode) (eq mode 'perl-mode))
+	   (setq compstr (concat "D:/Perl/bin/perl.exe " (buffer-file-name))))
+	  )
+    (save-buffer)
+    (if compstr 
+	(compile compstr))))
+;;将orginal-compile-fun加入my-compile-hook中
+(add-hook 'my-compile-hook 'orginal-compile-fun)
+
+;;将my-compile-main-fun 绑定到f5上
+(global-set-key [(f5)] 'my-compile-main-fun) 
+</pre>
+#+END_HTML
+
+如果有一天，你要用octave 语言，你可以这样扩展：
+#+BEGIN_HTML
+<pre lang="lisp" line="1">
+(add-hook 'my-compile-hook '(lambda ()
+                              (if (eq major-mode 'octave-mode)
+                                  (progn
+                                    (save-buffer)
+                                    (compile (concat "octave --silent " (buffer-file-name)))))))
+</pre>
+#+END_HTML
+
+使用hook机制是不是很方便呀，这样就不用去修改orginal-compile-fun的代码了。
+
+
+ps：不知不觉罗嗦了这么多，其实我写这篇文章的目的有两个：1、是给初学emacs lisp的人介绍一下emacs字符串的操作和hook的机理以及强大的compile函数，希望有点用处。2、希望高手们也分享一下自己觉得很强大的emacs lisp 函数。
