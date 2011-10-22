@@ -18,8 +18,8 @@
 ;; Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 ;; 个人信息
-(setq user-mail-address "wxjeacen@gmail.com")
-(setq user-full-name    "Devil Wang")
+(setq user-mail-address "xiang_wang@trendmicro.com.cn")
+(setq user-full-name    "Xiang Wang")
 
 ;; 在fringe上显示一个小箭头指示当前buffer的边界
 (setq-default indicate-buffer-boundaries 'left)
