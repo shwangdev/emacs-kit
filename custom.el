@@ -1,6 +1,6 @@
 ;; -*- Emacs-Lisp -*-
 
-;; Time-stamp: <2011-08-20 18:35:00 Saturday by devil>
+;; Time-stamp: <2011-11-15 18:38:30 Tuesday by devil>
 
 (defconst my-emacs-path "~/.emacs.d/" "我的emacs相关配置文件的路径")
 (defconst my-emacs-my-lisps-path  (concat my-emacs-path "my-lisps/") "我自己写的emacs lisp包的路径")
@@ -287,7 +287,7 @@
 
 ;; Emacs中的文本浏览器w3m
 ;; http://emacser.com/w3m.htm
-(require 'w3m-settings)
+;;(require 'w3m-settings)
 
 ;; 以另一用户编辑文件, 或者编辑远程主机文件
 (require 'tramp-settings)
@@ -436,7 +436,7 @@ If FULL is t, copy full file name."
 (require 'org-settings)
 
 ;; 强大的发布工具
-(require 'muse-settings)
+;;(require 'muse-settings)
 
 ;; 用weblogger写WordPress博客
 ;; http://emacser.com/weblogger.htm
@@ -447,7 +447,7 @@ If FULL is t, copy full file name."
 
 ;; google-maps-el – Emacs中的谷歌地图
 ;; http://emacser.com/emacs-google-map.htm
-(require 'google-maps-settings)
+;;(require 'google-maps-settings)
 
 ;; 关闭buffer的时候, 如果该buffer有对应的进程存在, 不提示, 烦
 (delq 'process-kill-buffer-query-function kill-buffer-query-functions)
@@ -464,7 +464,8 @@ If FULL is t, copy full file name."
 ;; desktop,用来保存Emacs的桌面环境 — buffers、以及buffer的文件名、major modes和位置等等
 ;; (require 'desktop-settings)
 
-(set-default-font "-altsys-Serafettin Cartoon-normal-italic-ultra-expanded-*-*-*-*-*-*-0-iso10646-1")
+;;(set-default-font "-altsys-Serafettin Cartoon-normal-italic-ultra-expanded-*-*-*-*-*-*-0-iso10646-1")
+(set-default-font "-microsoft-Comic Sans MS-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1")
 (fullscreen)
 (switch-to-scratch)
 (sb-update)
