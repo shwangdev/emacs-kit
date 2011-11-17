@@ -180,7 +180,7 @@
 (require 'autopair-settings)
 
 ;; 把Eclipse的功能带给Emacs
-(require 'eclim-settings)
+;;(require 'eclim-settings)
 
 ;; 方便开发c/c++的配置
 (require 'c-settings)
