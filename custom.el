@@ -1,6 +1,6 @@
 ;; -*- Emacs-Lisp -*-
 
-;; Time-stamp: <2011-11-15 18:38:30 Tuesday by devil>
+;; Time-stamp: <2012-04-16 22:43:15 Monday by devil>
 
 (defconst my-emacs-path "~/.emacs.d/" "我的emacs相关配置文件的路径")
 (defconst my-emacs-my-lisps-path  (concat my-emacs-path "my-lisps/") "我自己写的emacs lisp包的路径")
@@ -464,8 +464,28 @@ If FULL is t, copy full file name."
 ;; desktop,用来保存Emacs的桌面环境 — buffers、以及buffer的文件名、major modes和位置等等
 ;; (require 'desktop-settings)
 
-;;(set-default-font "-altsys-Serafettin Cartoon-normal-italic-ultra-expanded-*-*-*-*-*-*-0-iso10646-1")
+;;(set-default-font "-altsys-Serafettin
+;;Cartoon-normal-italic-ultra-expanded-*-*-*-*-*-*-0-iso10646-1")
+
+(require 'ibus)
+(add-hook 'after-init-hook 'ibus-mode-on)
+;;
+(ibus-define-common-key ?\C-\s nil)
+;; Use C-/ for Undo command
+(ibus-define-common-key ?\C-/ nil)
+;; Change cursor color depending on IBus status
+(setq ibus-cursor-color '("red" "blue" "limegreen"))
+;;
+(ibus-define-common-key ?\S-\s nil)
+(global-set-key (kbd "S-SPC") 'ibus-toggle)
 (set-default-font "-microsoft-Comic Sans MS-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1")
-(fullscreen)
+;;(fullscreen)
+(setq jabber-account-list
+      '(("wxjeacen@gmail.com" 
+         (:network-server . "talk.google.com")
+         (:connection-type . ssl))))
+(autoload 'gobject-c-mode "gobject-c-mode" "GObject C mode" t)
+(add-hook 'c-mode-hook 'gobject-c-mode)
+
 (switch-to-scratch)
 (sb-update)

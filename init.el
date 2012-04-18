@@ -77,3 +77,4 @@
 (if (file-exists-p user-specific-config) (load user-specific-config))
 
 ;;; init.el ends here
+(put 'erase-buffer 'disabled nil)

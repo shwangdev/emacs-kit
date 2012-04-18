@@ -52,7 +52,7 @@
  `(("{" skeleton-c-mode-left-brace)))
 
 ;; 动态检查语法错误
-(require 'flymake-settings)
+;;(require 'flymake-settings)
 
 (defun skeleton-c-mode-left-brace (arg)
   (interactive "P")
