@@ -479,6 +479,7 @@ If FULL is t, copy full file name."
 (ibus-define-common-key ?\S-\s nil)
 (global-set-key (kbd "S-SPC") 'ibus-toggle)
 (set-default-font "-microsoft-Comic Sans MS-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1")
+(set-face-attribute 'default nil :height 100)
 ;;(fullscreen)
 (setq jabber-account-list
       '(("wxjeacen@gmail.com" 
