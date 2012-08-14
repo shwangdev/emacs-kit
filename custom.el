@@ -1,6 +1,6 @@
 ;; -*- Emacs-Lisp -*-
 
-;; Time-stamp: <2012-04-16 22:43:15 Monday by devil>
+;; Time-stamp: <2012-08-13 19:02:49 Monday by devil>
 
 (defconst my-emacs-path "~/.emacs.d/" "我的emacs相关配置文件的路径")
 (defconst my-emacs-my-lisps-path  (concat my-emacs-path "my-lisps/") "我自己写的emacs lisp包的路径")
@@ -478,7 +478,7 @@ If FULL is t, copy full file name."
 ;;
 (ibus-define-common-key ?\S-\s nil)
 (global-set-key (kbd "S-SPC") 'ibus-toggle)
-(set-default-font "-microsoft-Comic Sans MS-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1")
+;;(set-default-font "-microsoft-Comic Sans MS-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1")
 (set-face-attribute 'default nil :height 100)
 ;;(fullscreen)
 (setq jabber-account-list
@@ -487,6 +487,15 @@ If FULL is t, copy full file name."
          (:connection-type . ssl))))
 (autoload 'gobject-c-mode "gobject-c-mode" "GObject C mode" t)
 (add-hook 'c-mode-hook 'gobject-c-mode)
+;;
+
+(setq auto-mode-alist
+      (append '(
+                ("\\.html$" . two-mode-mode)
+                ("\\.php$" . two-mode-mode)
+                ("\\.php5$" . two-mode-mode)
+                )
+              auto-mode-alist))
 
 (switch-to-scratch)
 (sb-update)
