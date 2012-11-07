@@ -1,6 +1,6 @@
 ;; -*- Emacs-Lisp -*-
 
-;; Time-stamp: <2012-10-29 23:27:34 Monday by devil>
+;; Time-stamp: <2012-11-07 21:02:59 Wednesday by devil>
 
 (defconst my-emacs-path "~/.emacs.d/" "我的emacs相关配置文件的路径")
 (defconst my-emacs-my-lisps-path  (concat my-emacs-path "my-lisps/") "我自己写的emacs lisp包的路径")
@@ -489,7 +489,8 @@ If FULL is t, copy full file name."
 (add-hook 'c-mode-hook 'gobject-c-mode)
 ;;
 (require 'gmail-mew)
-
+;;
+(require 'douban-music)
 ;;
 
 (setq auto-mode-alist
